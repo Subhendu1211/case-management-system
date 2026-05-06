@@ -1,0 +1,549 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+model News {
+    id        Int      @id @default(autoincrement())
+    title     String
+    content   String
+    createdAt DateTime @default(now())
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum Role {
+    PRIVATE_SECRETARY
+    PRIVATE_ASSISTANT
+    COMMISSIONER
+    LEGAL_ASSISTANT
+    REGISTRAR
+    PROGRAMMER
+    STATIONERY
+    COMPUTER_ASSISTANT
+    ADMIN
+    CITIZEN
+
+    @@map("role")
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
+}
+
+enum CaseStatus {
+    DRAFT
+    DIARY_ENTERED
+    REGISTERED
+    UNDER_REVIEW
+    REVIEW_DONE
+    COMMISSIONER_SIGNATURE
+    CASE_ACCEPTED
+    PS_POST_ACCEPTANCE
+    PA_INITIAL_REVIEW
+    PENDING_QUERY
+    ROUTED_TO_LEGAL
+    REGISTRAR_INITIAL_REVIEW
+    PROGRAMMER_REVIEW
+    STATIONERY_REVIEW
+    ROUTED_TO_OE
+    NOT_RELATED
+    ORDER_SHEET_DRAFTED
+    REGISTRAR_REVIEW
+    REGISTRAR_UPLOAD_SIGNATURE
+    COMMISSIONER_APPROVAL
+    APPROVED
+    PA_TO_COMMISSIONER
+    PA_POST_APPROVAL
+    REGISTRAR_HANDOVER
+    LEGAL_FORWARDING
+    FORWARDING_STATIONERY
+    REGISTRAR_SIGNING
+    REGISTRAR_FINAL_REVIEW
+    DISPATCH_PENDING
+    DISPATCHED
+    CLOSED
+}
+
+enum SectionAssigned {
+    COMMISSIONER
+    PROGRAMMER
+    LEGAL
+    OE
+    REGISTRAR
+    STATIONERY
+}
+
+enum DispatchType {
+    INWARD
+    OUTWARD
+}
+
+enum DispatchChannel {
+    BY_HAND
+    POST
+    COURIER
+    EMAIL
+}
+
+enum DocumentKind {
+    COMPLAINT
+    ORDER_SHEET
+    FORWARDING_LETTER
+    ATTACHMENT
+    OTHER
+}
+
+enum CasePriority {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+
+    @@map("case_priority")
+}
+
+enum ComplaintChannel {
+    EMAIL
+    PHONE
+    IN_PERSON
+    LETTER
+    ONLINE_PORTAL
+
+    @@map("complaint_channel")
+}
+
+enum CreatedBySource {
+    SELF
+    DISTRICT_DEPARTMENT_OFFICER
+    OTHER
+
+    @@map("created_by_source")
+}
+
+enum PartyType {
+    INDIVIDUAL
+    ORGANIZATION
+
+    @@map("party_type")
+}
+
+enum OrderSheetStatus {
+    DRAFT
+    SUBMITTED
+    REVISIONS_REQUESTED_BY_REGISTRAR
+    FORWARDED_BY_REGISTRAR
+    REVISIONS_REQUESTED_BY_COMMISSIONER
+    APPROVED_BY_COMMISSIONER
+    CANCELLED
+
+    @@map("order_sheet_status")
+}
+
+enum ForwardingLetterStatus {
+    DRAFT
+    PENDING_SIGNATURE
+    SIGNED
+    CANCELLED
+
+    @@map("forwarding_letter_status")
+}
+
+model WorkflowTransition {
+    id             String      @id @db.Uuid
+    fromStatus     CaseStatus? @map("from_status")
+    toStatus       CaseStatus  @map("to_status")
+    allowedRoles   Role[]      @map("allowed_roles")
+    autoTransition Boolean     @default(false) @map("auto_transition")
+    description    String?     @map("description")
+
+    @@index([fromStatus, toStatus])
+    @@index([toStatus])
+    @@map("workflow_transitions")
+}
+
+model IssueRegister {
+    id          String   @id @db.Uuid
+    caseYear    Int      @map("case_year")
+    caseId      String   @map("case_id") @db.Uuid
+    kind        String
+    recipient   String?
+    channel     String?
+    subject     String?
+    body        String?
+    referenceId String?  @map("reference_id") @db.Uuid
+    createdById String?  @map("created_by_id") @db.Uuid
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    case      Case  @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    createdBy User? @relation(fields: [createdById], references: [id])
+
+    @@index([caseYear, caseId])
+    @@map("issue_register")
+}
+
+model PublicRegistration {
+    id              String    @id @db.Uuid
+    registrationNo  String    @unique @map("registration_no")
+    fullName        String    @map("full_name")
+    email           String
+    mobile          String
+    alternateMobile String?   @map("alternate_mobile")
+    dateOfBirth     DateTime? @map("date_of_birth")
+    guardianName    String?   @map("guardian_name")
+    gender          Gender?
+    addressLine1    String    @map("address_line1")
+    addressLine2    String?   @map("address_line2")
+    state           String
+    district        String
+    pinCode         String    @map("pin_code")
+    userId          String?   @unique @map("user_id") @db.Uuid
+    createdAt       DateTime  @default(now()) @map("created_at")
+    createdIp       String?   @map("created_ip") @db.Inet
+
+    user User? @relation(fields: [userId], references: [id])
+
+    @@index([createdAt])
+    @@map("public_registrations")
+}
+
+model QueryLetter {
+    id            String          @id @db.Uuid
+    caseYear      Int             @map("case_year")
+    caseId        String          @map("case_id") @db.Uuid
+    recipientType String          @map("recipient_type")
+    channel       DispatchChannel
+    subject       String
+    body          String          @default("")
+    createdById   String          @map("created_by_id") @db.Uuid
+    createdAt     DateTime        @default(now()) @map("created_at")
+
+    case      Case @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    createdBy User @relation(fields: [createdById], references: [id])
+
+    @@index([caseYear, caseId])
+    @@map("query_letters")
+}
+
+model Complaint {
+    id                      String           @id @db.Uuid
+    referenceNo             String           @unique @map("reference_no")
+    name                    String
+    createdById             String?          @map("created_by_id") @db.Uuid
+    createdBySource         CreatedBySource  @map("created_by_source")
+    createdByOtherName      String?          @map("created_by_other_name")
+    complainantType         PartyType        @map("complainant_type")
+    contact                 String?
+    district                String           @map("district")
+    complainantAddressLine1 String           @map("complainant_address_line1")
+    complainantAddressLine2 String?          @map("complainant_address_line2")
+    complainantBlock        String?          @map("complainant_block")
+    complainantPoliceStation String?         @map("complainant_police_station")
+    complainantPostOffice   String?          @map("complainant_post_office")
+    complainantCity         String           @map("complainant_city")
+    complainantState        String           @map("complainant_state")
+    complainantPostalCode   String           @map("complainant_postal_code")
+    accusedName             String           @map("accused_name")
+    accusedType             PartyType        @map("accused_type")
+    accusedAddressLine1     String           @map("accused_address_line1")
+    accusedAddressLine2     String?          @map("accused_address_line2")
+    accusedBlock            String?          @map("accused_block")
+    accusedPoliceStation    String?          @map("accused_police_station")
+    accusedPostOffice       String?          @map("accused_post_office")
+    accusedDistrict         String           @map("accused_district")
+    accusedCity             String           @map("accused_city")
+    accusedState            String           @map("accused_state")
+    accusedPostalCode       String           @map("accused_postal_code")
+    subject                 String
+    description             String
+    channel                 ComplaintChannel
+    disabilityTypeId        String?          @map("disability_type_id") @db.Uuid
+    createdAt               DateTime         @default(now()) @map("created_at")
+    createdIp               String?          @map("created_ip") @db.Inet
+    linkedCaseYear          Int?             @map("linked_case_year")
+    linkedCaseId            String?          @map("linked_case_id") @db.Uuid
+
+    linkedCase     Case?               @relation(fields: [linkedCaseYear, linkedCaseId], references: [caseYear, id])
+    disabilityType DisabilityType?     @relation(fields: [disabilityTypeId], references: [id])
+    createdBy      User?               @relation(fields: [createdById], references: [id])
+    documents      ComplaintDocument[]
+
+    @@index([createdAt])
+    @@index([createdById])
+    @@index([linkedCaseYear, linkedCaseId])
+    @@index([disabilityTypeId])
+    @@map("complaints")
+}
+
+model DisabilityType {
+    id        String   @id @db.Uuid
+    name      String   @unique
+    code      String?
+    isActive  Boolean  @default(true) @map("is_active")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    complaints Complaint[]
+
+    @@map("disability_types")
+}
+
+model ComplaintDocument {
+    id           String   @id @db.Uuid
+    complaintId  String   @map("complaint_id") @db.Uuid
+    fileName     String   @map("file_name")
+    mimeType     String   @map("mime_type")
+    storageKey   String   @map("storage_key")
+    sizeBytes    Int      @map("size_bytes")
+    uploadedById String?  @map("uploaded_by_id") @db.Uuid
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    complaint  Complaint @relation(fields: [complaintId], references: [id])
+    uploadedBy User?     @relation(fields: [uploadedById], references: [id])
+
+    @@index([complaintId])
+    @@map("complaint_documents")
+}
+
+model User {
+    id           String   @id @db.Uuid
+    email        String   @unique
+    name         String
+    passwordHash String   @map("password_hash")
+    role         Role
+    isActive     Boolean  @default(true) @map("is_active")
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    mobile        String?  @unique
+    address       String?
+    policeStation String?  @map("police_station")
+    block         String?
+    pincode       String?
+
+    casesAssigned             Case[]                    @relation("cases_assigned")
+    authSessions              AuthSession[]
+    caseStatusHistories       CaseStatusHistory[]
+    orderSheets               OrderSheet[]
+    orderSheetReviewHistories OrderSheetReviewHistory[]
+    forwardingLettersPrepared ForwardingLetter[]        @relation("forwarding_prepared_by")
+    forwardingLettersSigned   ForwardingLetter[]        @relation("forwarding_signed_by")
+    documents                 Document[]
+    auditLogs                 AuditLog[]
+    complaintDocuments        ComplaintDocument[]
+    complaintsCreated         Complaint[]
+    issueRegisters            IssueRegister[]
+    queryLetters              QueryLetter[]
+    publicRegistration        PublicRegistration?
+
+    @@map("users")
+}
+
+model AuthSession {
+    id              String    @id @db.Uuid
+    userId          String    @map("user_id") @db.Uuid
+    refreshTokenJti String    @map("refresh_token_jti")
+    refreshHash     String    @map("refresh_hash")
+    revokedAt       DateTime? @map("revoked_at")
+    createdAt       DateTime  @default(now()) @map("created_at")
+    expiresAt       DateTime  @map("expires_at")
+
+    user User @relation(fields: [userId], references: [id])
+
+    @@index([userId])
+    @@map("auth_sessions")
+}
+
+model Case {
+    caseYear        Int             @map("case_year")
+    id              String          @db.Uuid
+    registrationNo  String          @map("registration_no")
+    caseNo          String?         @map("case_no")
+    slNo            Int?            @map("sl_no")
+    status          CaseStatus
+    sectionAssigned SectionAssigned @map("section_assigned")
+    priority        CasePriority    @default(MEDIUM)
+    assignedToId    String?         @map("assigned_to_id") @db.Uuid
+    complainantName String          @map("complainant_name")
+    subject         String
+    receivedAt      DateTime?       @map("received_at")
+    createdAt       DateTime        @default(now()) @map("created_at")
+    updatedAt       DateTime        @updatedAt @map("updated_at")
+
+    // Electronic signature & stamp data
+    registrarSignatureData    String? @map("registrar_signature_data")
+    commissionerSignatureData String? @map("commissioner_signature_data")
+    commissionerStampUrl      String? @map("commissioner_stamp_url")
+
+    assignedTo User? @relation("cases_assigned", fields: [assignedToId], references: [id])
+
+    statusHistory     CaseStatusHistory[]
+    orderSheets       OrderSheet[]
+    documents         Document[]
+    dispatches        CaseDispatch[]
+    forwardingLetters ForwardingLetter[]
+    complaints        Complaint[]
+    issueRegisters    IssueRegister[]
+    queryLetters      QueryLetter[]
+
+    @@id([caseYear, id])
+    @@index([status])
+    @@index([priority])
+    @@index([sectionAssigned])
+    @@index([caseYear])
+    @@index([assignedToId])
+    @@index([registrationNo])
+    @@index([caseNo])
+    @@index([slNo])
+    @@index([createdAt])
+    @@map("cases")
+}
+
+model CaseStatusHistory {
+    changedAt   DateTime   @default(now()) @map("changed_at")
+    id          String     @db.Uuid
+    caseYear    Int        @map("case_year")
+    caseId      String     @map("case_id") @db.Uuid
+    oldStatus   CaseStatus @map("old_status")
+    newStatus   CaseStatus @map("new_status")
+    remarks     String?
+    changedById String?    @map("changed_by_id") @db.Uuid
+
+    case      Case  @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    changedBy User? @relation(fields: [changedById], references: [id])
+
+    @@id([changedAt, id])
+    @@index([caseId])
+    @@index([newStatus])
+    @@index([changedAt])
+    @@map("case_status_history")
+}
+
+model OrderSheet {
+    id           String           @id @db.Uuid
+    caseYear     Int              @map("case_year")
+    caseId       String           @map("case_id") @db.Uuid
+    title        String
+    body         String
+    status       OrderSheetStatus
+    preparedById String           @map("prepared_by_id") @db.Uuid
+    createdAt    DateTime         @default(now()) @map("created_at")
+    updatedAt    DateTime         @updatedAt @map("updated_at")
+
+    case          Case                      @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    preparedBy    User                      @relation(fields: [preparedById], references: [id])
+    reviewHistory OrderSheetReviewHistory[]
+
+    @@index([caseId])
+    @@index([status])
+    @@index([preparedById])
+    @@map("order_sheets")
+}
+
+model OrderSheetReviewHistory {
+    id           String   @id @db.Uuid
+    orderSheetId String   @map("order_sheet_id") @db.Uuid
+    action       String
+    remarks      String?
+    actorId      String   @map("actor_id") @db.Uuid
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    orderSheet OrderSheet @relation(fields: [orderSheetId], references: [id])
+    actor      User       @relation(fields: [actorId], references: [id])
+
+    @@index([orderSheetId])
+    @@index([actorId])
+    @@map("order_sheet_review_history")
+}
+
+model ForwardingLetter {
+    id           String                 @id @db.Uuid
+    caseYear     Int                    @map("case_year")
+    caseId       String                 @map("case_id") @db.Uuid
+    subject      String
+    body         String
+    status       ForwardingLetterStatus
+    preparedById String                 @map("prepared_by_id") @db.Uuid
+    signedById   String?                @map("signed_by_id") @db.Uuid
+    signedAt     DateTime?              @map("signed_at")
+    createdAt    DateTime               @default(now()) @map("created_at")
+
+    case       Case  @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    preparedBy User  @relation("forwarding_prepared_by", fields: [preparedById], references: [id])
+    signedBy   User? @relation("forwarding_signed_by", fields: [signedById], references: [id])
+
+    @@index([caseId])
+    @@index([status])
+    @@map("forwarding_letters")
+}
+
+model CaseDispatch {
+    dispatchedAt DateTime        @default(now()) @map("dispatched_at")
+    id           String          @db.Uuid
+    caseYear     Int             @map("case_year")
+    caseId       String          @map("case_id") @db.Uuid
+    type         DispatchType
+    channel      DispatchChannel
+    addressTo    String?         @map("address_to")
+    trackingNo   String?         @map("tracking_no")
+    receivedAt   DateTime?       @map("received_at")
+    status       String
+    createdAt    DateTime        @default(now()) @map("created_at")
+
+    case Case @relation(fields: [caseYear, caseId], references: [caseYear, id])
+
+    @@id([dispatchedAt, id])
+    @@index([caseId])
+    @@index([type])
+    @@index([channel])
+    @@index([dispatchedAt])
+    @@map("case_dispatch")
+}
+
+model Document {
+    caseId       String       @map("case_id") @db.Uuid
+    id           String       @db.Uuid
+    caseYear     Int          @map("case_year")
+    kind         DocumentKind
+    fileName     String       @map("file_name")
+    mimeType     String       @map("mime_type")
+    storageKey   String       @map("storage_key")
+    sizeBytes    Int          @map("size_bytes")
+    uploadedById String?      @map("uploaded_by_id") @db.Uuid
+    createdAt    DateTime     @default(now()) @map("created_at")
+
+    case       Case  @relation(fields: [caseYear, caseId], references: [caseYear, id])
+    uploadedBy User? @relation(fields: [uploadedById], references: [id])
+
+    @@id([caseId, id])
+    @@index([caseId])
+    @@index([createdAt])
+    @@map("documents")
+}
+
+model AuditLog {
+    createdAt       DateTime @default(now()) @map("created_at")
+    id              String   @db.Uuid
+    userId          String?  @map("user_id") @db.Uuid
+    module          String
+    action          String
+    entityType      String   @map("entity_type")
+    entityId        String?  @map("entity_id")
+    statusCode      Int      @map("status_code")
+    ip              String?
+    ipAddress       String?  @map("ip_address") @db.Inet
+    userAgent       String?  @map("user_agent")
+    payloadSnapshot Json?    @map("payload_snapshot")
+
+    user User? @relation(fields: [userId], references: [id])
+
+    @@id([createdAt, id])
+    @@index([userId])
+    @@index([module])
+    @@index([entityId])
+    @@index([createdAt])
+    @@map("audit_logs")
+}

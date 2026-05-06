@@ -1,0 +1,237 @@
+﻿{
+  "authLayout": {
+    "brandingTitle": "ରାଜ୍ୟ ଭିନ୍ନକ୍ଷମ ଆୟୁକ୍ତ, ଓଡିଶା, ଓଡିଶା",
+    "systemTitle": "କେସ୍ ମ୍ୟାନେଜମେଣ୍ଟ ସିଷ୍ଟମ୍",
+    "features": [
+      "ଅଭିଯୋଗ ନମନ୍ଦାନ ପ୍ରକ୍ରିୟା ସହଜ",
+      "ମାମଲାର ସ୍ଥିତିର ତୁରନ୍ତ ଟ୍ରାକିଂ",
+      "ସୁରକ୍ଷିତ ଡକ୍ୟୁମେଣ୍ଟ ପରିଚାଳନା"
+    ],
+    "portal": {
+      "label": "ନାଗରିକ ସେବା ପୋର୍ଟାଲ୍",
+      "secure": "ସୁରକ୍ଷିତ ପ୍ରବେଶ"
+    },
+    "actions": {
+      "newRegistration": "ନୂତନ ପଞ୍ଜିକରଣ"
+    },
+    "bottomStrip": {
+      "status": "ଅଧିକୃତ ସରକାରୀ ପୋର୍ଟାଲ୍ - ସୁରକ୍ଷିତ",
+      "ssl": "SSL ଦ୍ୱାରା ସୁରକ୍ଷିତ"
+    },
+    "footer": {
+      "rights": "ଓଡିଶା ସରକାର. ସମସ୍ତ ଅଧିକାର ସଂରକ୍ଷିତ।",
+      "terms": "ସେବା ନିୟମାବଳୀ",
+      "privacy": "ଗୋପନୀୟତା ନୀତି",
+      "help": "ସହାୟତା ଓ ସମର୍ଥନ"
+    },
+    "mobile": {
+      "gov": "ଓଡିଶା ସରକାର",
+      "system": "କେସ୍ ମ୍ୟାନେଜମେଣ୍ଟ ସିଷ୍ଟମ୍"
+    },
+    "cardFooter": {
+      "rights": "ଓଡିଶା ସରକାର",
+      "allRights": "ସମସ୍ତ ଅଧିକାର ସଂରକ୍ଷିତ",
+      "privacy": "ଗୋପନୀୟତା ନୀତି"
+    }
+  },
+  "auth": {
+    "citizenLogin": {
+      "title": "ପୂର୍ବରୁ ପଞ୍ଜିକୃତ",
+      "subtitle": "ଆପଣଙ୍କ ଅଭିଯୋଗର ସ୍ଥିତି ଓ ପ୍ରୋଫାଇଲ୍ ଦେଖନ୍ତୁ।",
+      "identifierLabel": "ଇମେଲ୍ କିମ୍ବା ମୋବାଇଲ୍ ନମ୍ବର",
+      "identifierPlaceholder": "ଆପଣଙ୍କ ଇମେଲ୍ କିମ୍ବା ମୋବାଇଲ୍ ଦିଅନ୍ତୁ",
+      "passwordLabel": "ପାସୱାର୍ଡ",
+      "passwordPlaceholder": "ଆପଣଙ୍କ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ",
+      "forgotPassword": "ପାସୱାର୍ଡ ଭୁଲିଗଲେ?",
+      "securityVerification": "ସୁରକ୍ଷା ସତ୍ୟାପନ",
+      "captchaLoading": "ଲୋଡ୍ ହେଉଛି...",
+      "captchaRefresh": "CAPTCHA ପୁନଃଲୋଡ୍ କରନ୍ତୁ",
+      "captchaPlaceholder": "ଉପରେ ଦେଖାଯାଇଥିବା ଅକ୍ଷର ଲେଖନ୍ତୁ",
+      "loginError": "ଲଗଇନ୍ ବିଫଳ। ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।",
+      "signIn": "ସୁରକ୍ଷିତ ଭାବେ ଲଗଇନ୍",
+      "signingIn": "ଲଗଇନ୍ ହେଉଛି...",
+      "divider": "କିମ୍ବା ଚାଲୁ ରଖନ୍ତୁ",
+      "googleNotConfigured": "ଗୁଗୁଲ୍ ଲଗଇନ୍ ସଜାଯାଇନାହିଁ"
+    },
+    "staffLogin": {
+      "title": "କର୍ମଚାରୀ ପୋର୍ଟାଲ୍ ଲଗଇନ୍",
+      "subtitle": "କେବଳ ଅନୁମୋଦିତ ଅଧିକାରୀ ଓ ପ୍ରଶାସକଙ୍କ ପାଇଁ।",
+      "badge": "ସୀମିତ ପ୍ରବେଶ - ସରକାରୀ କର୍ମଚାରୀ ଚିହ୍ନପତ୍ର ଆବଶ୍ୟକ",
+      "identifierLabel": "ଇମେଲ୍ କିମ୍ବା ମୋବାଇଲ୍ ନମ୍ବର",
+      "identifierPlaceholder": "ଆପଣଙ୍କ ଅଧିକୃତ ଇମେଲ୍ କିମ୍ବା ମୋବାଇଲ୍",
+      "passwordLabel": "ପାସୱାର୍ଡ",
+      "passwordPlaceholder": "ଆପଣଙ୍କ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ",
+      "forgotPassword": "ପାସୱାର୍ଡ ଭୁଲିଗଲେ?",
+      "securityVerification": "ସୁରକ୍ଷା ସତ୍ୟାପନ",
+      "captchaLoading": "ଲୋଡ୍ ହେଉଛି...",
+      "captchaRefresh": "CAPTCHA ପୁନଃଲୋଡ୍ କରନ୍ତୁ",
+      "captchaPlaceholder": "ଉପରେ ଦେଖାଯାଇଥିବା ଅକ୍ଷର ଲେଖନ୍ତୁ",
+      "loginError": "ଲଗଇନ୍ ବିଫଳ। ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।",
+      "signingIn": "ଲଗଇନ୍ ହେଉଛି...",
+      "signIn": "ସୁରକ୍ଷିତ ଭାବେ ଲଗଇନ୍"
+    },
+    "register": {
+      "title": "ନାଗରିକ ପଞ୍ଜିକରଣ",
+      "sectionPersonal": "ବ୍ୟକ୍ତିଗତ ସୂଚନା",
+      "sectionPassword": "ପାସୱାର୍ଡ ସେଟ୍ କରନ୍ତୁ",
+      "sectionAddress": "ଠିକଣା ବିବରଣୀ",
+      "fullNameLabel": "ପୂର୍ଣ୍ଣ ନାମ",
+      "fullNamePlaceholder": "ଆଧିକାରିକ ରେକର୍ଡ ଅନୁସାରେ",
+      "emailLabel": "ଇମେଲ୍ ଠିକଣା",
+      "emailPlaceholder": "your@email.com",
+      "mobileLabel": "ମୋବାଇଲ୍ ନମ୍ବର",
+      "mobilePlaceholder": "10 ଡିଜିଟ୍ ମୋବାଇଲ୍ ନମ୍ବର",
+      "passwordLabel": "ପାସୱାର୍ଡ",
+      "passwordPlaceholder": "କମ୍ ସେ କମ୍ 8ଟି ଅକ୍ଷର",
+      "confirmPasswordLabel": "ପାସୱାର୍ଡ ନିଶ୍ଚିତ କରନ୍ତୁ",
+      "confirmPasswordPlaceholder": "ପୁନଃ ପାସୱାର୍ଡ ଲେଖନ୍ତୁ",
+      "passwordHint": "ପାସୱାର୍ଡ କମ୍ ସେ କମ୍ 8ଟି ଅକ୍ଷର ହେବା ଆବଶ୍ୟକ।",
+      "addressLabel": "ପୂର୍ଣ୍ଣ ଠିକଣା",
+      "addressPlaceholder": "ଘର ନମ୍ବର, ରାସ୍ତା, ଅଞ୍ଚଳ...",
+      "districtLabel": "ଜିଲ୍ଲା",
+      "policeStationLabel": "ପୋଲିସ୍ ଷ୍ଟେସନ୍",
+      "policeStationPlaceholder": "ନିକଟସ୍ଥ ପୋଲିସ୍ ଷ୍ଟେସନ୍",
+      "blockLabel": "ବ୍ଲକ୍",
+      "blockPlaceholder": "ବ୍ଲକ୍ / ଗ୍ରାମ ପଞ୍ଚାୟତ",
+      "pincodeLabel": "ପିନ୍ କୋଡ୍",
+      "pincodePlaceholder": "6 ଡିଜିଟ୍ ପିନ୍",
+      "errors": {
+        "nameRequired": "ପୂର୍ଣ୍ଣ ନାମ ଆବଶ୍ୟକ।",
+        "emailRequired": "ଇମେଲ୍ ଆବଶ୍ୟକ।",
+        "mobileRequired": "ମୋବାଇଲ୍ ନମ୍ବର ଆବଶ୍ୟକ।",
+        "passwordRequired": "ପାସୱାର୍ଡ ଆବଶ୍ୟକ।",
+        "passwordMin": "ପାସୱାର୍ଡ କମ୍ ସେ କମ୍ 8 ଅକ୍ଷର ହେବା ଆବଶ୍ୟକ।",
+        "passwordMismatch": "ପାସୱାର୍ଡ ମେଳ ଖାଉନାହିଁ।",
+        "addressRequired": "ଠିକଣା ଆବଶ୍ୟକ।",
+        "policeStationRequired": "ପୋଲିସ୍ ଷ୍ଟେସନ୍ ଆବଶ୍ୟକ।",
+        "blockRequired": "ବ୍ଲକ୍ ଆବଶ୍ୟକ।",
+        "pincodeRequired": "ପିନ୍ କୋଡ୍ ଆବଶ୍ୟକ।",
+        "formError": "ପଞ୍ଜିକରଣ ବିଫଳ। ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।"
+      },
+      "terms": {
+        "prefix": "ପଞ୍ଜିକରଣ କରିବା ସମୟରେ ଆପଣ",
+        "termsOfService": "ସେବା ନିୟମାବଳୀ",
+        "and": "ଏବଂ",
+        "privacyPolicy": "ଗୋପନୀୟତା ନୀତି",
+        "suffix": "କୁ ମନ୍ଜୁର କରୁଛନ୍ତି।"
+      },
+      "registering": "ପଞ୍ଜିକରଣ ହେଉଛି...",
+      "submit": "ମୋର ଆକାଉଣ୍ଟ ସୃଷ୍ଟି କରନ୍ତୁ",
+      "alreadyRegistered": "ପୂର୍ବରୁ ପଞ୍ଜିକୃତ?",
+      "signInHere": "ଏଠାରେ ଲଗଇନ୍ କରନ୍ତୁ"
+    }
+  },
+  "appShell": {
+    "titleBase": "SCPD CMS",
+    "skipToContent": "Skip to main content",
+    "mobile": {
+      "gov": "Govt. of Odisha"
+    },
+    "header": {
+      "subtitle": "Government of Odisha - Case Management System"
+    },
+    "footer": {
+      "left": "Government of Odisha. All rights reserved.",
+      "right": "SCPD - Case Management System - v1.0"
+    },
+    "user": {
+      "loading": "Loading...",
+      "fallback": "User",
+      "roleEmpty": "-"
+    },
+    "sidebar": {
+      "gov": "Govt. of Odisha",
+      "office": "State Commissioner for Persons with Disabilities",
+      "signOut": "Sign Out"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "nav": {
+      "profile": "Profile",
+      "complaints": "Complaints",
+      "cases": "Cases"
+    },
+    "fallbackName": "Citizen",
+    "fallbackInitials": "C",
+    "welcome": "Welcome, {name}",
+    "portalLine": "Citizen Portal - State Commissioner for Persons with Disabilities",
+    "registration": {
+      "label": "Reg. No."
+    },
+    "completion": {
+      "label": "Profile Completion",
+      "tip": "Complete your profile to unlock all portal features."
+    },
+    "quickActions": {
+      "fileComplaint": {
+        "label": "File a Complaint",
+        "sublabel": "Submit a new complaint for review"
+      },
+      "myComplaints": {
+        "label": "My Complaints",
+        "sublabel": "Track status of filed complaints"
+      },
+      "myCases": {
+        "label": "My Cases",
+        "sublabel": "View ongoing and resolved cases"
+      }
+    },
+    "card": {
+      "title": "Citizen Profile",
+      "subtitle": "Maintain accurate details for complaint processing"
+    },
+    "success": "Profile saved successfully. Your information has been updated.",
+    "sections": {
+      "personal": "Personal Information",
+      "address": "Address Details"
+    },
+    "fields": {
+      "fullName": "Full Name",
+      "email": "Email ID",
+      "mobile": "Mobile Number",
+      "altMobile": "Alternate Mobile Number",
+      "dob": "Date of Birth",
+      "guardian": "Father / Husband / Guardian Name",
+      "gender": "Gender",
+      "genderPlaceholder": "Select Gender",
+      "address1": "Address Line 1",
+      "address2": "Address Line 2",
+      "state": "State",
+      "district": "District",
+      "districtPlaceholder": "Select District",
+      "pin": "PIN Code"
+    },
+    "placeholders": {
+      "fullName": "As per official documents",
+      "email": "your@email.com",
+      "mobile": "10-digit mobile number",
+      "altMobile": "Optional",
+      "guardian": "Guardian's full name",
+      "address1": "House/Door No., Street, Locality...",
+      "address2": "Landmark, area (optional)",
+      "pin": "6-digit PIN"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "errors": {
+      "fullName": "Full name is required.",
+      "email": "Email is required.",
+      "mobile": "Mobile number is required.",
+      "gender": "Gender is required.",
+      "address1": "Address is required.",
+      "state": "State is required.",
+      "district": "District is required.",
+      "pin": "PIN code is required.",
+      "form": "Unable to save profile."
+    },
+    "save": {
+      "saving": "Saving...",
+      "save": "Save Profile",
+      "requiredNote": "Fields marked * are required"
+    }
+  }
+}

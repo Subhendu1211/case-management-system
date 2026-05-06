@@ -1,0 +1,17 @@
+@import "./tokens.css";
+@import "./signatures.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-neutral-0/70 backdrop-blur border border-neutral-200 rounded-lg;
+  }
+}

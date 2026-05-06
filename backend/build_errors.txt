@@ -1,0 +1,6 @@
+src/routes/v1/index.ts(11,37): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/routes/v1/index.ts(12,30): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/routes/v1/index.ts(15,24): error TS2307: Cannot find module './routes.news' or its corresponding type declarations.
+src/routes/v1/index.ts(16,31): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/routes/v1/index.ts(17,34): error TS2307: Cannot find module './routes.successStories' or its corresponding type declarations.
+src/routes/v1/index.ts(18,41): error TS2307: Cannot find module './routes.successStoriesCaption' or its corresponding type declarations.

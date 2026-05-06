@@ -1,0 +1,21 @@
+-- Migration: add PRIVATE_ASSISTANT role
+BEGIN;
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT 1
+		FROM pg_type
+		WHERE typname = 'role'
+	) THEN
+		ALTER TYPE role ADD VALUE IF NOT EXISTS 'PRIVATE_ASSISTANT';
+	ELSIF EXISTS (
+		SELECT 1
+		FROM pg_type
+		WHERE typname = 'Role'
+	) THEN
+		EXECUTE 'ALTER TYPE "Role" ADD VALUE IF NOT EXISTS ''PRIVATE_ASSISTANT''';
+	END IF;
+END $$;
+
+COMMIT;

@@ -1,0 +1,14 @@
+{
+  "name": "case-management-system",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm -w backend run dev",
+    "dev:frontend": "npm -w frontend run dev",
+    "build": "npm -w backend run build && npm -w frontend run build",
+    "lint": "npm -w backend run lint && npm -w frontend run lint"
+  }
+}

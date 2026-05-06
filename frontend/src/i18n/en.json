@@ -1,0 +1,269 @@
+﻿{
+  "authLayout": {
+    "brandingTitle": "State Commissioner for Persons with Disabilities, Odisha",
+    "systemTitle": "Case Management System",
+    "lang": {
+      "en": "EN",
+      "or": "ODIA"
+    },
+    "features": [
+      "Streamlined complaint registration",
+      "Real-time case status tracking",
+      "Secure document management"
+    ],
+    "portal": {
+      "label": "Citizen Services Portal",
+      "secure": "Secure Access"
+    },
+    "actions": {
+      "newRegistration": "New Registration"
+    },
+    "bottomStrip": {
+      "status": "Official Government Portal - Secured",
+      "ssl": "SSL Encrypted"
+    },
+    "footer": {
+      "rights": "Government of Odisha. All rights reserved.",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "help": "Help & Support"
+    },
+    "mobile": {
+      "gov": "Government of Odisha",
+      "system": "Case Management System"
+    },
+    "cardFooter": {
+      "rights": "Government of Odisha",
+      "allRights": "All rights reserved",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "auth": {
+    "citizenLogin": {
+      "title": "Already Exist",
+      "subtitle": "Access your complaint status and profile.",
+      "identifierLabel": "Email or Mobile Number",
+      "identifierPlaceholder": "Enter your email or mobile number",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "securityVerification": "Security Verification",
+      "captchaLoading": "Loading...",
+      "captchaRefresh": "Refresh CAPTCHA",
+      "captchaPlaceholder": "Type the characters shown above",
+      "loginError": "Login failed. Please try again.",
+      "signIn": "Sign In Securely",
+      "signingIn": "Signing in...",
+      "divider": "or continue with",
+      "googleNotConfigured": "Google login not configured"
+    },
+    "staffLogin": {
+      "title": "Staff Portal Sign In",
+      "subtitle": "Authorised legal officers, commissioners and administrators only.",
+      "badge": "Restricted access - Government staff credentials required",
+      "identifierLabel": "Email or Mobile Number",
+      "identifierPlaceholder": "Enter your official email or mobile",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "securityVerification": "Security Verification",
+      "captchaLoading": "Loading...",
+      "captchaRefresh": "Refresh CAPTCHA",
+      "captchaPlaceholder": "Type the characters shown above",
+      "loginError": "Login failed. Please try again.",
+      "signingIn": "Signing in...",
+      "signIn": "Sign In Securely"
+    },
+    "officerLogin": {
+      "subtitle": "Authorised legal officers and staff only.",
+      "backToPortal": "Back to portal selection"
+    },
+    "register": {
+      "title": "Citizen Registration",
+      "sectionPersonal": "Personal Information",
+      "sectionPassword": "Set Password",
+      "sectionAddress": "Address Details",
+      "fullNameLabel": "Full Name",
+      "fullNamePlaceholder": "As per official records",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "your@email.com",
+      "mobileLabel": "Mobile Number",
+      "mobilePlaceholder": "10-digit mobile number",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter password",
+      "passwordHint": "Password must be at least 8 characters long.",
+      "addressLabel": "Full Address",
+      "addressPlaceholder": "House No., Street, Locality...",
+      "districtLabel": "District",
+      "policeStationLabel": "Police Station",
+      "policeStationPlaceholder": "Nearest police station",
+      "blockLabel": "Block",
+      "blockPlaceholder": "Block / Gram Panchayat",
+      "pincodeLabel": "PIN Code",
+      "pincodePlaceholder": "6-digit PIN",
+      "errors": {
+        "nameRequired": "Full name is required.",
+        "emailRequired": "Email address is required.",
+        "mobileRequired": "Mobile number is required.",
+        "passwordRequired": "Password is required.",
+        "passwordMin": "Password must be at least 8 characters.",
+        "passwordMismatch": "Passwords do not match.",
+        "addressRequired": "Address is required.",
+        "policeStationRequired": "Police Station is required.",
+        "blockRequired": "Block is required.",
+        "pincodeRequired": "PIN code is required.",
+        "formError": "Registration failed. Please try again."
+      },
+      "terms": {
+        "prefix": "By registering, you agree to the",
+        "termsOfService": "Terms of Service",
+        "and": "and",
+        "privacyPolicy": "Privacy Policy",
+        "suffix": "of the Government of Odisha."
+      },
+      "registering": "Registering...",
+      "submit": "Create My Account",
+      "alreadyRegistered": "Already registered?",
+      "signInHere": "Sign In Here"
+    },
+    "forgotPassword": {
+      "title": "Account Recovery",
+      "subtitle": "Use your registered email or phone number to receive a secure reset link.",
+      "successTitle": "Reset Link Sent",
+      "successMessage": "If an account exists with {identifier}, you will receive a password reset link shortly via your registered contact method.",
+      "returnToSignIn": "Return to Sign In",
+      "infoNotice": "Enter your registered email or phone number, then complete the system-generated captcha to continue.",
+      "emailLabel": "Registered Email Address",
+      "emailPlaceholder": "Enter your registered email",
+      "emailInvalid": "Enter a valid email address.",
+      "or": "OR",
+      "phoneLabel": "Registered Phone Number",
+      "phonePlaceholder": "Enter your registered phone number",
+      "phoneInvalid": "Enter a valid phone number.",
+      "securityVerification": "Security Verification",
+      "captchaLoading": "Loading...",
+      "captchaRefresh": "Refresh CAPTCHA",
+      "captchaPlaceholder": "Type the characters shown above",
+      "formErrorMissing": "Enter your registered email or phone number.",
+      "formErrorBoth": "Use either email or phone number, not both.",
+      "sending": "Sending Reset Link...",
+      "submit": "Send Reset Link",
+      "backToSignIn": "Back to Sign In"
+    }
+  },
+  "appShell": {
+    "titleBase": "SCPD CMS",
+    "skipToContent": "Skip to main content",
+    "mobile": {
+      "gov": "Govt. of Odisha"
+    },
+    "header": {
+      "subtitle": "Government of Odisha - Case Management System"
+    },
+    "footer": {
+      "left": "Government of Odisha. All rights reserved.",
+      "right": "SCPD - Case Management System - v1.0"
+    },
+    "user": {
+      "loading": "Loading...",
+      "fallback": "User",
+      "roleEmpty": "-"
+    },
+    "sidebar": {
+      "gov": "Govt. of Odisha",
+      "office": "State Commissioner for Persons with Disabilities",
+      "signOut": "Sign Out"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "nav": {
+      "profile": "Profile",
+      "complaints": "Complaints",
+      "cases": "Cases"
+    },
+    "fallbackName": "Citizen",
+    "fallbackInitials": "C",
+    "welcome": "Welcome, {name}",
+    "portalLine": "Citizen Portal - State Commissioner for Persons with Disabilities",
+    "registration": {
+      "label": "Reg. No."
+    },
+    "completion": {
+      "label": "Profile Completion",
+      "tip": "Complete your profile to unlock all portal features."
+    },
+    "quickActions": {
+      "fileComplaint": {
+        "label": "File a Complaint",
+        "sublabel": "Submit a new complaint for review"
+      },
+      "myComplaints": {
+        "label": "My Complaints",
+        "sublabel": "Track status of filed complaints"
+      },
+      "myCases": {
+        "label": "My Cases",
+        "sublabel": "View ongoing and resolved cases"
+      }
+    },
+    "card": {
+      "title": "Citizen Profile",
+      "subtitle": "Maintain accurate details for complaint processing"
+    },
+    "success": "Profile saved successfully. Your information has been updated.",
+    "sections": {
+      "personal": "Personal Information",
+      "address": "Address Details"
+    },
+    "fields": {
+      "fullName": "Full Name",
+      "email": "Email ID",
+      "mobile": "Mobile Number",
+      "altMobile": "Alternate Mobile Number",
+      "dob": "Date of Birth",
+      "guardian": "Father / Husband / Guardian Name",
+      "gender": "Gender",
+      "genderPlaceholder": "Select Gender",
+      "address1": "Address Line 1",
+      "address2": "Address Line 2",
+      "state": "State",
+      "district": "District",
+      "districtPlaceholder": "Select District",
+      "pin": "PIN Code"
+    },
+    "placeholders": {
+      "fullName": "As per official documents",
+      "email": "your@email.com",
+      "mobile": "10-digit mobile number",
+      "altMobile": "Optional",
+      "guardian": "Guardian's full name",
+      "address1": "House/Door No., Street, Locality...",
+      "address2": "Landmark, area (optional)",
+      "pin": "6-digit PIN"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "errors": {
+      "fullName": "Full name is required.",
+      "email": "Email is required.",
+      "mobile": "Mobile number is required.",
+      "gender": "Gender is required.",
+      "address1": "Address is required.",
+      "state": "State is required.",
+      "district": "District is required.",
+      "pin": "PIN code is required.",
+      "form": "Unable to save profile."
+    },
+    "save": {
+      "saving": "Saving...",
+      "save": "Save Profile",
+      "requiredNote": "Fields marked * are required"
+    }
+  }
+}

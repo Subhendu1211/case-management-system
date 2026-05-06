@@ -1,0 +1,34 @@
+import { Router } from 'express';
+import { healthRouter } from './routes.health.js';
+import { authRouter } from './routes.auth.js';
+import { usersRouter } from './routes.users.js';
+import { casesRouter } from './routes.cases.js';
+import { dashboardRouter } from './routes.dashboard.js';
+import { complaintsRouter } from './routes.complaints.js';
+import { dispatchRouter } from './routes.dispatch.js';
+import { auditRouter } from './routes.audit.js';
+import { disabilityTypesRouter } from './routes.disability-types.js';
+import { issueRegisterRouter } from './routes.issue-register.js';
+import { publicRouter } from './routes.public.js';
+import newsRouter from './routes.news.js';
+import { profileRouter } from './routes.profile.js';
+import successStoriesRouter from './routes.successStories.js';
+import successStoriesCaptionRouter from './routes.successStoriesCaption.js';
+
+export const apiV1Router = Router();
+
+apiV1Router.use('/health', healthRouter);
+apiV1Router.use('/auth', authRouter);
+apiV1Router.use('/users', usersRouter);
+apiV1Router.use('/cases', casesRouter);
+apiV1Router.use('/dashboard', dashboardRouter);
+apiV1Router.use('/complaints', complaintsRouter);
+apiV1Router.use('/dispatch', dispatchRouter);
+apiV1Router.use('/disability-types', disabilityTypesRouter);
+apiV1Router.use('/issue-register', issueRegisterRouter);
+apiV1Router.use('/public', publicRouter);
+apiV1Router.use('/profile', profileRouter);
+apiV1Router.use('/news', newsRouter);
+apiV1Router.use('/', auditRouter);
+apiV1Router.use('/success-stories', successStoriesRouter);
+apiV1Router.use('/success-stories-caption', successStoriesCaptionRouter);

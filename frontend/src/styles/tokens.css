@@ -1,0 +1,54 @@
+:root {
+  /* === BRAND COLORS === */
+  --color-brand-50: 239 246 255;
+  --color-brand-500: 59 130 246;
+  --color-brand-600: 37 99 235;
+
+  /* === GOVERNMENT OF ODISHA THEME === */
+  --color-gov-blue: 30 58 138;         /* Royal Navy Blue  (#1E3A8A) */
+  --color-gov-blue-dark: 15 36 105;    /* Deeper Navy for hover (#0F2469) */
+  --color-gov-blue-light: 37 99 235;   /* Lighter accent blue (#2563EB) */
+  --color-gov-gold: 161 116 7;         /* Rich Antique Gold (#A17407) */
+  --color-gov-gold-light: 234 179 8;   /* Bright Gold (#EAB308) */
+  --color-gov-saffron: 234 88 12;      /* Saffron accent (#EA580C) */
+
+  /* === NEUTRAL SCALE (Extended) === */
+  --color-neutral-0: 255 255 255;
+  --color-neutral-50: 248 250 252;
+  --color-neutral-100: 241 245 249;
+  --color-neutral-150: 234 240 246;
+  --color-neutral-200: 226 232 240;
+  --color-neutral-300: 203 213 225;
+  --color-neutral-400: 148 163 184;
+  --color-neutral-500: 100 116 139;
+  --color-neutral-600: 71 85 105;
+  --color-neutral-700: 51 65 85;
+  --color-neutral-800: 30 41 59;
+  --color-neutral-900: 15 23 42;
+
+  /* === SEMANTIC COLORS === */
+  --color-success: 22 163 74;
+  --color-success-bg: 240 253 244;
+  --color-warning: 217 119 6;
+  --color-warning-bg: 255 251 235;
+  --color-danger: 220 38 38;
+  --color-danger-bg: 254 242 242;
+  --color-info: 2 132 199;
+  --color-info-bg: 240 249 255;
+
+  /* === TYPOGRAPHY === */
+  --font-sans:
+    'Segoe UI', ui-sans-serif, system-ui, -apple-system, Roboto, Arial,
+    "Noto Sans", "Liberation Sans", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+
+  /* === SPACING (8pt grid) === */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+}
