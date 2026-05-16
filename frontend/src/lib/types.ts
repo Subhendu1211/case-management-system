@@ -19,6 +19,22 @@ export type User = {
 	role: Role;
 };
 
+export type AuthLoginSuccess = {
+	accessToken: string;
+	refreshToken: string;
+	user: User;
+};
+
+export type AuthLoginOtpChallenge = {
+	requiresOtp: true;
+	otpRequestId: string;
+	channel: 'EMAIL' | 'SMS';
+	recipientHint: string;
+	message: string;
+};
+
+export type AuthLoginResult = AuthLoginSuccess | AuthLoginOtpChallenge;
+
 export type UserAdmin = User & {
 	isActive: boolean;
 	createdAt: string;

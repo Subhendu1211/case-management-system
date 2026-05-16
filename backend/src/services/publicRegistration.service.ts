@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma.js';
 import type { CreatePublicRegistrationInput } from '../schemas/publicRegistration.schemas.js';
+import { sendRegistrationSuccessNotification } from './notifications.service.js';
 
 function buildRegistrationNo() {
 	const year = new Date().getFullYear();
@@ -15,7 +16,7 @@ export async function createPublicRegistration(input: CreatePublicRegistrationIn
 	for (let attempt = 0; attempt < 5; attempt += 1) {
 		const registrationNo = buildRegistrationNo();
 		try {
-			return await prisma.publicRegistration.create({
+			const created = await prisma.publicRegistration.create({
 				data: {
 					id: randomUUID(),
 					registrationNo,
@@ -34,6 +35,13 @@ export async function createPublicRegistration(input: CreatePublicRegistrationIn
 					createdIp: input.createdIp ?? null
 				}
 			});
+			await sendRegistrationSuccessNotification({
+				name: created.fullName,
+				email: created.email,
+				mobile: created.mobile,
+				registrationNo: created.registrationNo
+			});
+			return created;
 		} catch (err) {
 			lastError = err;
 			if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {

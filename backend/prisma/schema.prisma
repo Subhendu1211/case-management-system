@@ -338,8 +338,27 @@ model User {
     issueRegisters            IssueRegister[]
     queryLetters              QueryLetter[]
     publicRegistration        PublicRegistration?
+    loginOtpChallenges        LoginOtpChallenge[]
 
     @@map("users")
+}
+
+model LoginOtpChallenge {
+    id           String   @id @db.Uuid
+    userId       String   @map("user_id") @db.Uuid
+    identifier   String
+    channel      String
+    otpHash      String   @map("otp_hash")
+    attempts     Int      @default(0)
+    expiresAt    DateTime @map("expires_at")
+    usedAt       DateTime? @map("used_at")
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id])
+
+    @@index([userId])
+    @@index([expiresAt])
+    @@map("login_otp_challenges")
 }
 
 model AuthSession {

@@ -1,7 +1,12 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "../components/Input";
-import { useLogin, useMe, useCaptcha } from "../lib/queries/auth.queries";
+import {
+  useLogin,
+  useMe,
+  useCaptcha,
+  useVerifyLoginOtp,
+} from "../lib/queries/auth.queries";
 import { roleHome } from "../lib/auth";
 import { AuthLayout } from "../components/layout/AuthLayout";
 import { t, useLang } from "../i18n";
@@ -11,6 +16,7 @@ export function LoginPage() {
   const nav = useNavigate();
   const me = useMe();
   const login = useLogin();
+  const verifyLoginOtp = useVerifyLoginOtp();
   const captchaQuery = useCaptcha();
 
   const [identifier, setIdentifier] = useState("");
@@ -47,7 +53,17 @@ export function LoginPage() {
           solution: captchaSolution,
         },
       });
-      nav(roleHome(result.user.role));
+      if ("requiresOtp" in result && result.requiresOtp) {
+        const otp = window.prompt(result.message || "Enter OTP");
+        if (!otp) return;
+        const verified = await verifyLoginOtp.mutateAsync({
+          otpRequestId: result.otpRequestId,
+          otp: otp.trim(),
+        });
+        nav(roleHome(verified.user.role));
+        return;
+      }
+      throw new Error("OTP verification is required to login.");
     } catch {
       captchaQuery.refetch();
       setCaptchaSolution("");

@@ -4,6 +4,7 @@ import { HttpError } from '../utils/httpError.js';
 import type { AuthUser } from '../middleware/rbac.js';
 import { assertWorkflowTransitionAllowed } from './workflow.service.js';
 import type { CaseStatus, Prisma, PrismaClient } from '@prisma/client';
+import { sendCaseCreatedNotification } from './notifications.service.js';
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
@@ -41,6 +42,21 @@ export async function createCase(input: {
 			remarks: 'Case created'
 		}
 	});
+
+	const creator = await prisma.user.findUnique({
+		where: { id: input.createdBy.id },
+		select: { name: true, email: true, mobile: true }
+	});
+	if (creator) {
+		await sendCaseCreatedNotification({
+			name: creator.name,
+			email: creator.email,
+			mobile: creator.mobile,
+			caseYear: created.caseYear,
+			registrationNo: created.registrationNo,
+			subject: created.subject
+		});
+	}
 
 	return created;
 }

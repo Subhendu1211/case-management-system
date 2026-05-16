@@ -9,6 +9,12 @@ import {
   verifyRefreshToken,
 } from "./tokens.js";
 import { env } from "../../config/env.js";
+import {
+  inferNotificationChannel,
+  maskRecipient,
+  sendLoginOtp,
+  sendRegistrationSuccessNotification,
+} from "../notifications.service.js";
 
 function addSeconds(date: Date, seconds: number) {
   return new Date(date.getTime() + seconds * 1000);
@@ -50,10 +56,43 @@ async function issueSession(user: {
 
 import { RegisterInput } from "../../schemas/auth.schemas.js";
 
-export async function login(identifier: string, password: string) {
+function generateNumericOtp(length: number) {
+  const min = 10 ** (length - 1);
+  const max = 10 ** length;
+  return String(Math.floor(Math.random() * (max - min)) + min);
+}
+
+function normalizeIdentifier(identifier: string) {
+  return identifier.includes("@")
+    ? identifier.trim().toLowerCase()
+    : identifier.trim();
+}
+
+type LoginOtpChallengeResponse = {
+  requiresOtp: true;
+  otpRequestId: string;
+  channel: "EMAIL" | "SMS";
+  recipientHint: string;
+  message: string;
+};
+
+type LoginSuccessResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; email: string; name: string; role: any };
+};
+
+export async function login(
+  identifier: string,
+  password: string,
+): Promise<LoginOtpChallengeResponse> {
+  const normalized = normalizeIdentifier(identifier);
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: identifier }, { mobile: identifier }],
+      OR: [
+        { email: { equals: normalized, mode: "insensitive" } },
+        { mobile: normalized },
+      ],
     },
   });
   if (!user || !user.isActive) throw new HttpError(401, "Invalid credentials");
@@ -61,13 +100,122 @@ export async function login(identifier: string, password: string) {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new HttpError(401, "Invalid credentials");
 
-  return issueSession(user);
+  const preferredChannel = inferNotificationChannel(normalized);
+  const emailTarget = user.email.trim();
+  const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
+  if (!emailTarget || !smsTarget) {
+    throw new HttpError(
+      400,
+      "Both email and mobile number are required for OTP delivery. Please contact support.",
+    );
+  }
+
+  const otp = generateNumericOtp(env.LOGIN_OTP_LENGTH);
+  const expiresAt = addSeconds(new Date(), env.LOGIN_OTP_TTL_SECONDS);
+
+  await prisma.loginOtpChallenge.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
+  const challenge = await prisma.loginOtpChallenge.create({
+    data: {
+      id: randomUUID(),
+      userId: user.id,
+      identifier: normalized,
+      channel: preferredChannel,
+      otpHash: await bcrypt.hash(otp, 10),
+      expiresAt,
+    },
+  });
+
+  const results = await Promise.allSettled([
+    sendLoginOtp({
+      channel: "EMAIL",
+      identifier: emailTarget,
+      otp,
+      expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
+    }),
+    sendLoginOtp({
+      channel: "SMS",
+      identifier: smsTarget,
+      otp,
+      expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
+    }),
+  ]);
+  const failed = results.some((result) => result.status === "rejected");
+
+  if (failed) {
+    await prisma.loginOtpChallenge.update({
+      where: { id: challenge.id },
+      data: { usedAt: new Date() },
+    });
+    throw new HttpError(
+      500,
+      "Unable to send OTP on email and SMS right now. Please try again.",
+    );
+  }
+
+  return {
+    requiresOtp: true,
+    otpRequestId: challenge.id,
+    channel: preferredChannel,
+    recipientHint: `${maskRecipient(emailTarget, "EMAIL")} & ${maskRecipient(
+      smsTarget,
+      "SMS",
+    )}`,
+    message: `OTP sent to your email ${maskRecipient(emailTarget, "EMAIL")} and mobile ${maskRecipient(smsTarget, "SMS")}.`,
+  };
+}
+
+export async function loginVerifyOtp(
+  otpRequestId: string,
+  otp: string,
+): Promise<LoginSuccessResponse> {
+  const challenge = await prisma.loginOtpChallenge.findUnique({
+    where: { id: otpRequestId },
+    include: { user: true },
+  });
+
+  if (!challenge || challenge.usedAt || challenge.expiresAt <= new Date()) {
+    throw new HttpError(401, "OTP expired or invalid. Please login again.");
+  }
+
+  if (challenge.attempts >= env.LOGIN_OTP_MAX_ATTEMPTS) {
+    await prisma.loginOtpChallenge.update({
+      where: { id: challenge.id },
+      data: { usedAt: new Date() },
+    });
+    throw new HttpError(401, "OTP attempts exceeded. Please login again.");
+  }
+
+  const validOtp = await bcrypt.compare(otp.trim(), challenge.otpHash);
+  if (!validOtp) {
+    await prisma.loginOtpChallenge.update({
+      where: { id: challenge.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw new HttpError(401, "Invalid OTP.");
+  }
+
+  await prisma.loginOtpChallenge.update({
+    where: { id: challenge.id },
+    data: { usedAt: new Date() },
+  });
+
+  if (!challenge.user.isActive) throw new HttpError(401, "Invalid credentials");
+  return issueSession(challenge.user);
 }
 
 export async function register(data: RegisterInput) {
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedMobile = data.mobile.trim();
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: [{ email: data.email }, { mobile: data.mobile }],
+      OR: [
+        { email: { equals: normalizedEmail, mode: "insensitive" } },
+        { mobile: normalizedMobile },
+      ],
     },
   });
 
@@ -81,8 +229,8 @@ export async function register(data: RegisterInput) {
     data: {
       id: randomUUID(),
       name: data.name,
-      email: data.email,
-      mobile: data.mobile,
+      email: normalizedEmail,
+      mobile: normalizedMobile,
       passwordHash,
       address: data.address,
       policeStation: data.policeStation,
@@ -93,14 +241,20 @@ export async function register(data: RegisterInput) {
     },
   });
 
+  await sendRegistrationSuccessNotification({
+    name: user.name,
+    email: user.email,
+    mobile: user.mobile,
+  });
+
   return issueSession(user);
 }
 
 export async function forgotPassword(identifier: string) {
-  const value = identifier.trim();
+  const value = normalizeIdentifier(identifier);
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: value }, { mobile: value }],
+      OR: [{ email: { equals: value, mode: "insensitive" } }, { mobile: value }],
     },
   });
   if (!user) {

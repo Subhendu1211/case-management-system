@@ -8,11 +8,28 @@ import type {
 } from "@prisma/client";
 import type { AuthUser } from "../middleware/rbac.js";
 import type { UpdateComplaintInput } from "../schemas/complaint.schemas.js";
+import { sendComplaintSubmittedNotification } from "./notifications.service.js";
+import { logger } from "../config/logger.js";
 
 function generateReferenceNo(now = new Date()) {
   const yyyy = now.getUTCFullYear();
   const rand = Math.floor(Math.random() * 900000 + 100000);
   return `CMP-${yyyy}-${rand}`;
+}
+
+function deriveNotificationTargets(contact?: string | null) {
+  const raw = String(contact ?? "").trim();
+  if (!raw) {
+    return { email: null as string | null, mobile: null as string | null };
+  }
+
+  const email =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw) ? raw.toLowerCase() : null;
+  const digits = raw.replace(/\D+/g, "");
+  const mobile =
+    digits.length >= 10 && digits.length <= 15 ? digits : null;
+
+  return { email, mobile };
 }
 
 export async function createComplaint(input: {
@@ -74,7 +91,7 @@ export async function createComplaint(input: {
   // best-effort collision retry
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await prisma.complaint.create({
+      const created = await prisma.complaint.create({
         data: {
           id: randomUUID(),
           referenceNo,
@@ -113,6 +130,35 @@ export async function createComplaint(input: {
           linkedCaseId: input.linkedCaseId,
         },
       });
+
+      void (async () => {
+        try {
+          const derivedTargets = deriveNotificationTargets(created.contact);
+          const creator = created.createdById
+            ? await prisma.user.findUnique({
+                where: { id: created.createdById },
+                select: { name: true, email: true, mobile: true },
+              })
+            : null;
+          const recipientEmail = derivedTargets.email ?? creator?.email ?? null;
+          const recipientMobile = derivedTargets.mobile ?? creator?.mobile ?? null;
+          if (!recipientEmail && !recipientMobile) return;
+
+          await sendComplaintSubmittedNotification({
+            name: creator?.name || created.name,
+            email: recipientEmail ?? undefined,
+            mobile: recipientMobile ?? undefined,
+            referenceNo: created.referenceNo,
+            subject: created.subject,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          // Complaint creation must not fail for notification delivery issues.
+          logger.warn({ error: message, complaintId: created.id }, "[COMPLAINT_NOTIFICATION_FAILED]");
+        }
+      })();
+
+      return created;
     } catch (e: any) {
       // unique violation
       if (e?.code === "P2002") {

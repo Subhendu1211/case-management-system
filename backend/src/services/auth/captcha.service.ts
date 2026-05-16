@@ -86,7 +86,7 @@ export function verifyCaptcha(input: CaptchaInput): boolean {
     return false;
   }
 
-  const normalized = input.solution.trim().toUpperCase();
+  const normalized = input.solution.trim();
   record.attempts += 1;
   const isValid = normalized.length > 0 && normalized === record.solution;
 

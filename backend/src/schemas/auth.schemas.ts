@@ -47,6 +47,14 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const verifyLoginOtpSchema = z.object({
+  otpRequestId: z.string().uuid(),
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{4,8}$/, "OTP must be 4 to 8 digits"),
+});
+
 export const googleLoginSchema = z.object({
   idToken: z.string().min(1),
 });
@@ -55,4 +63,5 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
+export type VerifyLoginOtpInput = z.infer<typeof verifyLoginOtpSchema>;
 export type GoogleLoginInput = z.infer<typeof googleLoginSchema>;

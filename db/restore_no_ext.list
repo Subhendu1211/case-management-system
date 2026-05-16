@@ -1,0 +1,429 @@
+;
+; Archive created at 2026-05-06 06:37:10 UTC
+;     dbname: scpd_cms
+;     TOC Entries: 422
+;     Compression: gzip
+;     Dump Version: 1.15-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 16.10 (Debian 16.10-1.pgdg13+1)
+;     Dumped by pg_dump version: 16.10 (Debian 16.10-1.pgdg13+1)
+;
+;
+; Selected TOC Entries:
+;
+984; 1247 24988 TYPE public CaseStatus postgres
+993; 1247 25036 TYPE public DispatchChannel postgres
+990; 1247 25030 TYPE public DispatchType postgres
+996; 1247 25046 TYPE public DocumentKind postgres
+1062; 1247 32770 TYPE public Gender postgres
+981; 1247 24972 TYPE public Role postgres
+987; 1247 25018 TYPE public SectionAssigned postgres
+1149; 1247 74114 TYPE public case_priority postgres
+1137; 1247 74042 TYPE public case_status postgres
+999; 1247 25058 TYPE public complaint_channel postgres
+1047; 1247 25313 TYPE public created_by_source postgres
+1146; 1247 74104 TYPE public dispatch_channel postgres
+1143; 1247 74098 TYPE public dispatch_type postgres
+1152; 1247 74124 TYPE public document_kind postgres
+1008; 1247 25090 TYPE public forwarding_letter_status postgres
+1005; 1247 25074 TYPE public order_sheet_status postgres
+1002; 1247 25068 TYPE public party_type postgres
+1155; 1247 74161 TYPE public role postgres
+1140; 1247 74084 TYPE public section_assigned postgres
+353; 1255 65726 FUNCTION public set_updated_at_cms_org_units() postgres
+283; 1259 131465 TABLE public ACHIEVMRENTS postgres
+281; 1259 131449 TABLE public Anual_Report postgres
+292; 1259 139746 TABLE public CAUSE_LIST postgres
+277; 1259 123233 TABLE public Disability_Act postgres
+279; 1259 131433 TABLE public Disability_guidlins postgres
+278; 1259 131425 TABLE public Disability_policies postgres
+285; 1259 139617 TABLE public EQUAL_OPERTUNITY_POLICY postgres
+296; 1259 139778 TABLE public FAQ postgres
+276; 1259 123225 TABLE public Former_state_commissioner postgres
+288; 1259 139641 TABLE public GRO postgres
+280; 1259 131441 TABLE public Handbook_concerning_Persons_with_Disabilities postgres
+304; 1259 148038 TABLE public ICC postgres
+291; 1259 139738 TABLE public INTERM_ORDERS_OF_SCPD postgres
+295; 1259 139770 TABLE public LANDMARK_COURT_JUDJMENT postgres
+286; 1259 139625 TABLE public LIST_OF_DSSSOS postgres
+287; 1259 139633 TABLE public LIST_OF_GROS postgres
+274; 1259 106808 TABLE public News postgres
+273; 1259 106807 SEQUENCE public News_id_seq postgres
+4328; 0 0 SEQUENCE OWNED BY public News_id_seq postgres
+290; 1259 139730 TABLE public ORDERS_OF_SCPD postgres
+293; 1259 139754 TABLE public PENDENCY_STATUS postgres
+289; 1259 139649 TABLE public RTI_ACTS_RULES postgres
+284; 1259 131473 TABLE public Related_website postgres
+282; 1259 131457 TABLE public SUCESS_STORIES postgres
+294; 1259 139762 TABLE public SUO_MOTO_CASES postgres
+275; 1259 123217 TABLE public Telephone_Derectory postgres
+272; 1259 106799 TABLE public Tender postgres
+217; 1259 24962 TABLE public _prisma_migrations postgres
+252; 1259 65619 TABLE public admin_password_resets postgres
+251; 1259 65618 SEQUENCE public admin_password_resets_id_seq postgres
+4329; 0 0 SEQUENCE OWNED BY public admin_password_resets_id_seq postgres
+267; 1259 65783 TABLE public admin_user_logs postgres
+266; 1259 65782 SEQUENCE public admin_user_logs_id_seq postgres
+4330; 0 0 SEQUENCE OWNED BY public admin_user_logs_id_seq postgres
+248; 1259 65582 TABLE public admin_users postgres
+247; 1259 65581 SEQUENCE public admin_users_id_seq postgres
+4331; 0 0 SEQUENCE OWNED BY public admin_users_id_seq postgres
+229; 1259 25189 TABLE public audit_logs postgres
+221; 1259 25124 TABLE public auth_sessions postgres
+300; 1259 139834 TABLE public camp_courts_events postgres
+227; 1259 25172 TABLE public case_dispatch postgres
+223; 1259 25140 TABLE public case_status_history postgres
+222; 1259 25132 TABLE public cases postgres
+249; 1259 65599 TABLE public cms_dynamic_tables postgres
+306; 1259 156291 TABLE public cms_footer_links postgres
+254; 1259 65637 TABLE public cms_media postgres
+256; 1259 65657 TABLE public cms_media_albums postgres
+255; 1259 65656 SEQUENCE public cms_media_albums_id_seq postgres
+4332; 0 0 SEQUENCE OWNED BY public cms_media_albums_id_seq postgres
+253; 1259 65636 SEQUENCE public cms_media_id_seq postgres
+4333; 0 0 SEQUENCE OWNED BY public cms_media_id_seq postgres
+258; 1259 65684 TABLE public cms_menu_items postgres
+257; 1259 65683 SEQUENCE public cms_menu_items_id_seq postgres
+4334; 0 0 SEQUENCE OWNED BY public cms_menu_items_id_seq postgres
+260; 1259 65707 TABLE public cms_org_units postgres
+259; 1259 65706 SEQUENCE public cms_org_units_id_seq postgres
+4335; 0 0 SEQUENCE OWNED BY public cms_org_units_id_seq postgres
+263; 1259 65748 TABLE public cms_page_styles postgres
+270; 1259 65825 TABLE public cms_page_tables postgres
+265; 1259 65762 TABLE public cms_page_versions postgres
+264; 1259 65761 SEQUENCE public cms_page_versions_id_seq postgres
+4336; 0 0 SEQUENCE OWNED BY public cms_page_versions_id_seq postgres
+269; 1259 65799 TABLE public cms_page_workflow_logs postgres
+268; 1259 65798 SEQUENCE public cms_page_workflow_logs_id_seq postgres
+4337; 0 0 SEQUENCE OWNED BY public cms_page_workflow_logs_id_seq postgres
+262; 1259 65729 TABLE public cms_pages postgres
+261; 1259 65728 SEQUENCE public cms_pages_id_seq postgres
+4338; 0 0 SEQUENCE OWNED BY public cms_pages_id_seq postgres
+230; 1259 25319 TABLE public complaint_documents postgres
+219; 1259 25107 TABLE public complaints postgres
+303; 1259 139864 TABLE public disability_friendly_campaign_events postgres
+231; 1259 25338 TABLE public disability_types postgres
+228; 1259 25181 TABLE public documents postgres
+298; 1259 139805 TABLE public feedback_submissions postgres
+297; 1259 139804 SEQUENCE public feedback_submissions_id_seq postgres
+4339; 0 0 SEQUENCE OWNED BY public feedback_submissions_id_seq postgres
+226; 1259 25164 TABLE public forwarding_letters postgres
+242; 1259 65549 TABLE public grievances postgres
+241; 1259 65548 SEQUENCE public grievances_id_seq postgres
+4340; 0 0 SEQUENCE OWNED BY public grievances_id_seq postgres
+250; 1259 65608 TABLE public homepage_events postgres
+232; 1259 25747 TABLE public issue_register postgres
+235; 1259 32919 MATERIALIZED VIEW public mv_case_summary postgres
+237; 1259 32931 MATERIALIZED VIEW public mv_commissioner_workload postgres
+240; 1259 32950 MATERIALIZED VIEW public mv_dashboard_cards postgres
+239; 1259 32943 MATERIALIZED VIEW public mv_dispatch_tracking postgres
+236; 1259 32924 MATERIALIZED VIEW public mv_legal_pendency postgres
+238; 1259 32936 MATERIALIZED VIEW public mv_registrar_queue postgres
+244; 1259 65559 TABLE public news postgres
+243; 1259 65558 SEQUENCE public news_id_seq postgres
+4341; 0 0 SEQUENCE OWNED BY public news_id_seq postgres
+271; 1259 106787 TABLE public notice_board postgres
+225; 1259 25156 TABLE public order_sheet_review_history postgres
+224; 1259 25148 TABLE public order_sheets postgres
+234; 1259 32777 TABLE public public_registrations postgres
+305; 1259 148046 TABLE public publications_monthly_magazines_events postgres
+233; 1259 25755 TABLE public query_letters postgres
+301; 1259 139844 TABLE public quiz_competitions_events postgres
+302; 1259 139854 TABLE public sakhyama_ability_talk_events postgres
+220; 1259 25115 TABLE public users postgres
+246; 1259 65569 TABLE public whats_new postgres
+245; 1259 65568 SEQUENCE public whats_new_id_seq postgres
+4342; 0 0 SEQUENCE OWNED BY public whats_new_id_seq postgres
+218; 1259 25099 TABLE public workflow_transitions postgres
+299; 1259 139824 TABLE public workshops_awareness_events postgres
+3768; 2604 106811 DEFAULT public News id postgres
+3726; 2604 65622 DEFAULT public admin_password_resets id postgres
+3762; 2604 65786 DEFAULT public admin_user_logs id postgres
+3715; 2604 65585 DEFAULT public admin_users id postgres
+3729; 2604 65640 DEFAULT public cms_media id postgres
+3732; 2604 65660 DEFAULT public cms_media_albums id postgres
+3736; 2604 65687 DEFAULT public cms_menu_items id postgres
+3741; 2604 65710 DEFAULT public cms_org_units id postgres
+3756; 2604 65765 DEFAULT public cms_page_versions id postgres
+3764; 2604 65802 DEFAULT public cms_page_workflow_logs id postgres
+3747; 2604 65732 DEFAULT public cms_pages id postgres
+3791; 2604 139808 DEFAULT public feedback_submissions id postgres
+3707; 2604 65552 DEFAULT public grievances id postgres
+3709; 2604 65562 DEFAULT public news id postgres
+3711; 2604 65572 DEFAULT public whats_new id postgres
+4296; 0 131465 TABLE DATA public ACHIEVMRENTS postgres
+4294; 0 131449 TABLE DATA public Anual_Report postgres
+4305; 0 139746 TABLE DATA public CAUSE_LIST postgres
+4290; 0 123233 TABLE DATA public Disability_Act postgres
+4292; 0 131433 TABLE DATA public Disability_guidlins postgres
+4291; 0 131425 TABLE DATA public Disability_policies postgres
+4298; 0 139617 TABLE DATA public EQUAL_OPERTUNITY_POLICY postgres
+4309; 0 139778 TABLE DATA public FAQ postgres
+4289; 0 123225 TABLE DATA public Former_state_commissioner postgres
+4301; 0 139641 TABLE DATA public GRO postgres
+4293; 0 131441 TABLE DATA public Handbook_concerning_Persons_with_Disabilities postgres
+4317; 0 148038 TABLE DATA public ICC postgres
+4304; 0 139738 TABLE DATA public INTERM_ORDERS_OF_SCPD postgres
+4308; 0 139770 TABLE DATA public LANDMARK_COURT_JUDJMENT postgres
+4299; 0 139625 TABLE DATA public LIST_OF_DSSSOS postgres
+4300; 0 139633 TABLE DATA public LIST_OF_GROS postgres
+4287; 0 106808 TABLE DATA public News postgres
+4303; 0 139730 TABLE DATA public ORDERS_OF_SCPD postgres
+4306; 0 139754 TABLE DATA public PENDENCY_STATUS postgres
+4302; 0 139649 TABLE DATA public RTI_ACTS_RULES postgres
+4297; 0 131473 TABLE DATA public Related_website postgres
+4295; 0 131457 TABLE DATA public SUCESS_STORIES postgres
+4307; 0 139762 TABLE DATA public SUO_MOTO_CASES postgres
+4288; 0 123217 TABLE DATA public Telephone_Derectory postgres
+4285; 0 106799 TABLE DATA public Tender postgres
+4230; 0 24962 TABLE DATA public _prisma_migrations postgres
+4265; 0 65619 TABLE DATA public admin_password_resets postgres
+4280; 0 65783 TABLE DATA public admin_user_logs postgres
+4261; 0 65582 TABLE DATA public admin_users postgres
+4242; 0 25189 TABLE DATA public audit_logs postgres
+4234; 0 25124 TABLE DATA public auth_sessions postgres
+4313; 0 139834 TABLE DATA public camp_courts_events postgres
+4240; 0 25172 TABLE DATA public case_dispatch postgres
+4236; 0 25140 TABLE DATA public case_status_history postgres
+4235; 0 25132 TABLE DATA public cases postgres
+4262; 0 65599 TABLE DATA public cms_dynamic_tables postgres
+4319; 0 156291 TABLE DATA public cms_footer_links postgres
+4267; 0 65637 TABLE DATA public cms_media postgres
+4269; 0 65657 TABLE DATA public cms_media_albums postgres
+4271; 0 65684 TABLE DATA public cms_menu_items postgres
+4273; 0 65707 TABLE DATA public cms_org_units postgres
+4276; 0 65748 TABLE DATA public cms_page_styles postgres
+4283; 0 65825 TABLE DATA public cms_page_tables postgres
+4278; 0 65762 TABLE DATA public cms_page_versions postgres
+4282; 0 65799 TABLE DATA public cms_page_workflow_logs postgres
+4275; 0 65729 TABLE DATA public cms_pages postgres
+4243; 0 25319 TABLE DATA public complaint_documents postgres
+4232; 0 25107 TABLE DATA public complaints postgres
+4316; 0 139864 TABLE DATA public disability_friendly_campaign_events postgres
+4244; 0 25338 TABLE DATA public disability_types postgres
+4241; 0 25181 TABLE DATA public documents postgres
+4311; 0 139805 TABLE DATA public feedback_submissions postgres
+4239; 0 25164 TABLE DATA public forwarding_letters postgres
+4255; 0 65549 TABLE DATA public grievances postgres
+4263; 0 65608 TABLE DATA public homepage_events postgres
+4245; 0 25747 TABLE DATA public issue_register postgres
+4257; 0 65559 TABLE DATA public news postgres
+4284; 0 106787 TABLE DATA public notice_board postgres
+4238; 0 25156 TABLE DATA public order_sheet_review_history postgres
+4237; 0 25148 TABLE DATA public order_sheets postgres
+4247; 0 32777 TABLE DATA public public_registrations postgres
+4318; 0 148046 TABLE DATA public publications_monthly_magazines_events postgres
+4246; 0 25755 TABLE DATA public query_letters postgres
+4314; 0 139844 TABLE DATA public quiz_competitions_events postgres
+4315; 0 139854 TABLE DATA public sakhyama_ability_talk_events postgres
+4233; 0 25115 TABLE DATA public users postgres
+4259; 0 65569 TABLE DATA public whats_new postgres
+4231; 0 25099 TABLE DATA public workflow_transitions postgres
+4312; 0 139824 TABLE DATA public workshops_awareness_events postgres
+4343; 0 0 SEQUENCE SET public News_id_seq postgres
+4344; 0 0 SEQUENCE SET public admin_password_resets_id_seq postgres
+4345; 0 0 SEQUENCE SET public admin_user_logs_id_seq postgres
+4346; 0 0 SEQUENCE SET public admin_users_id_seq postgres
+4347; 0 0 SEQUENCE SET public cms_media_albums_id_seq postgres
+4348; 0 0 SEQUENCE SET public cms_media_id_seq postgres
+4349; 0 0 SEQUENCE SET public cms_menu_items_id_seq postgres
+4350; 0 0 SEQUENCE SET public cms_org_units_id_seq postgres
+4351; 0 0 SEQUENCE SET public cms_page_versions_id_seq postgres
+4352; 0 0 SEQUENCE SET public cms_page_workflow_logs_id_seq postgres
+4353; 0 0 SEQUENCE SET public cms_pages_id_seq postgres
+4354; 0 0 SEQUENCE SET public feedback_submissions_id_seq postgres
+4355; 0 0 SEQUENCE SET public grievances_id_seq postgres
+4356; 0 0 SEQUENCE SET public news_id_seq postgres
+4357; 0 0 SEQUENCE SET public whats_new_id_seq postgres
+3994; 2606 131472 CONSTRAINT public ACHIEVMRENTS ACHIEVMRENTS_pkey postgres
+3990; 2606 131456 CONSTRAINT public Anual_Report Anual_Report_pkey postgres
+4012; 2606 139753 CONSTRAINT public CAUSE_LIST CAUSE_LIST_pkey postgres
+3982; 2606 123240 CONSTRAINT public Disability_Act Disability_Act_pkey postgres
+3986; 2606 131440 CONSTRAINT public Disability_guidlins Disability_guidlins_pkey postgres
+3984; 2606 131432 CONSTRAINT public Disability_policies Disability_policies_pkey postgres
+3998; 2606 139624 CONSTRAINT public EQUAL_OPERTUNITY_POLICY EQUAL_OPERTUNITY_POLICY_pkey postgres
+4020; 2606 139785 CONSTRAINT public FAQ FAQ_pkey postgres
+3980; 2606 123232 CONSTRAINT public Former_state_commissioner Former_state_commissioner_pkey postgres
+4004; 2606 139648 CONSTRAINT public GRO GRO_pkey postgres
+3988; 2606 131448 CONSTRAINT public Handbook_concerning_Persons_with_Disabilities Handbook_concerning_Persons_with_Disabilities_pkey postgres
+4034; 2606 148045 CONSTRAINT public ICC ICC_pkey postgres
+4010; 2606 139745 CONSTRAINT public INTERM_ORDERS_OF_SCPD INTERM_ORDERS_OF_SCPD_pkey postgres
+4018; 2606 139777 CONSTRAINT public LANDMARK_COURT_JUDJMENT LANDMARK_COURT_JUDJMENT_pkey postgres
+4000; 2606 139632 CONSTRAINT public LIST_OF_DSSSOS LIST_OF_DSSSOS_pkey postgres
+4002; 2606 139640 CONSTRAINT public LIST_OF_GROS LIST_OF_GROS_pkey postgres
+3976; 2606 106816 CONSTRAINT public News News_pkey postgres
+4008; 2606 139737 CONSTRAINT public ORDERS_OF_SCPD ORDERS_OF_SCPD_pkey postgres
+4014; 2606 139761 CONSTRAINT public PENDENCY_STATUS PENDENCY_STATUS_pkey postgres
+4006; 2606 139656 CONSTRAINT public RTI_ACTS_RULES RTI_ACTS_RULES_pkey postgres
+3996; 2606 131480 CONSTRAINT public Related_website Related_website_pkey postgres
+3992; 2606 131464 CONSTRAINT public SUCESS_STORIES SUCESS_STORIES_pkey postgres
+4016; 2606 139769 CONSTRAINT public SUO_MOTO_CASES SUO_MOTO_CASES_pkey postgres
+3978; 2606 123224 CONSTRAINT public Telephone_Derectory Telephone_Derectory_pkey postgres
+3974; 2606 106806 CONSTRAINT public Tender Tender_pkey postgres
+3823; 2606 24970 CONSTRAINT public _prisma_migrations _prisma_migrations_pkey postgres
+3931; 2606 65629 CONSTRAINT public admin_password_resets admin_password_resets_pkey postgres
+3964; 2606 65791 CONSTRAINT public admin_user_logs admin_user_logs_pkey postgres
+3922; 2606 65595 CONSTRAINT public admin_users admin_users_email_key postgres
+3924; 2606 65593 CONSTRAINT public admin_users admin_users_pkey postgres
+3889; 2606 25196 CONSTRAINT public audit_logs audit_logs_pkey postgres
+3843; 2606 25131 CONSTRAINT public auth_sessions auth_sessions_pkey postgres
+4026; 2606 139843 CONSTRAINT public camp_courts_events camp_courts_events_pkey postgres
+3879; 2606 25180 CONSTRAINT public case_dispatch case_dispatch_pkey postgres
+3861; 2606 25147 CONSTRAINT public case_status_history case_status_history_pkey postgres
+3850; 2606 25139 CONSTRAINT public cases cases_pkey postgres
+3927; 2606 65607 CONSTRAINT public cms_dynamic_tables cms_dynamic_tables_pkey postgres
+4038; 2606 156302 CONSTRAINT public cms_footer_links cms_footer_links_pkey postgres
+3940; 2606 65667 CONSTRAINT public cms_media_albums cms_media_albums_pkey postgres
+3942; 2606 65669 CONSTRAINT public cms_media_albums cms_media_albums_slug_key postgres
+3934; 2606 65649 CONSTRAINT public cms_media cms_media_file_name_key postgres
+3936; 2606 65647 CONSTRAINT public cms_media cms_media_pkey postgres
+3945; 2606 65699 CONSTRAINT public cms_menu_items cms_menu_items_path_key postgres
+3947; 2606 65695 CONSTRAINT public cms_menu_items cms_menu_items_pkey postgres
+3949; 2606 65697 CONSTRAINT public cms_menu_items cms_menu_items_slug_key postgres
+3952; 2606 65719 CONSTRAINT public cms_org_units cms_org_units_pkey postgres
+3960; 2606 65754 CONSTRAINT public cms_page_styles cms_page_styles_pkey postgres
+3970; 2606 65831 CONSTRAINT public cms_page_tables cms_page_tables_pkey postgres
+3962; 2606 65770 CONSTRAINT public cms_page_versions cms_page_versions_pkey postgres
+3967; 2606 65807 CONSTRAINT public cms_page_workflow_logs cms_page_workflow_logs_pkey postgres
+3955; 2606 65741 CONSTRAINT public cms_pages cms_pages_menu_item_id_key postgres
+3957; 2606 65739 CONSTRAINT public cms_pages cms_pages_pkey postgres
+3893; 2606 25326 CONSTRAINT public complaint_documents complaint_documents_pkey postgres
+3836; 2606 25114 CONSTRAINT public complaints complaints_pkey postgres
+4032; 2606 139873 CONSTRAINT public disability_friendly_campaign_events disability_friendly_campaign_events_pkey postgres
+3896; 2606 25346 CONSTRAINT public disability_types disability_types_pkey postgres
+3884; 2606 25188 CONSTRAINT public documents documents_pkey postgres
+4022; 2606 139813 CONSTRAINT public feedback_submissions feedback_submissions_pkey postgres
+3873; 2606 25171 CONSTRAINT public forwarding_letters forwarding_letters_pkey postgres
+3915; 2606 65557 CONSTRAINT public grievances grievances_pkey postgres
+3929; 2606 65617 CONSTRAINT public homepage_events homepage_events_pkey postgres
+3899; 2606 25754 CONSTRAINT public issue_register issue_register_pkey postgres
+3917; 2606 65567 CONSTRAINT public news news_pkey postgres
+3972; 2606 106794 CONSTRAINT public notice_board notice_board_pkey postgres
+3870; 2606 25163 CONSTRAINT public order_sheet_review_history order_sheet_review_history_pkey postgres
+3864; 2606 25155 CONSTRAINT public order_sheets order_sheets_pkey postgres
+3905; 2606 32784 CONSTRAINT public public_registrations public_registrations_pkey postgres
+4036; 2606 148055 CONSTRAINT public publications_monthly_magazines_events publications_monthly_magazines_events_pkey postgres
+3902; 2606 25763 CONSTRAINT public query_letters query_letters_pkey postgres
+4028; 2606 139853 CONSTRAINT public quiz_competitions_events quiz_competitions_events_pkey postgres
+4030; 2606 139863 CONSTRAINT public sakhyama_ability_talk_events sakhyama_ability_talk_events_pkey postgres
+3841; 2606 25123 CONSTRAINT public users users_pkey postgres
+3920; 2606 65579 CONSTRAINT public whats_new whats_new_pkey postgres
+3829; 2606 25106 CONSTRAINT public workflow_transitions workflow_transitions_pkey postgres
+4024; 2606 139833 CONSTRAINT public workshops_awareness_events workshops_awareness_events_pkey postgres
+3885; 1259 25231 INDEX public audit_logs_created_at_idx postgres
+3886; 1259 25230 INDEX public audit_logs_entity_id_idx postgres
+3887; 1259 25229 INDEX public audit_logs_module_idx postgres
+3890; 1259 25228 INDEX public audit_logs_user_id_idx postgres
+3844; 1259 25203 INDEX public auth_sessions_user_id_idx postgres
+3875; 1259 25222 INDEX public case_dispatch_case_id_idx postgres
+3876; 1259 25224 INDEX public case_dispatch_channel_idx postgres
+3877; 1259 25225 INDEX public case_dispatch_dispatched_at_idx postgres
+3880; 1259 25223 INDEX public case_dispatch_type_idx postgres
+3857; 1259 25212 INDEX public case_status_history_case_id_idx postgres
+3858; 1259 25214 INDEX public case_status_history_changed_at_idx postgres
+3859; 1259 25213 INDEX public case_status_history_new_status_idx postgres
+3845; 1259 25207 INDEX public cases_assigned_to_id_idx postgres
+3846; 1259 25209 INDEX public cases_case_no_idx postgres
+3847; 1259 25206 INDEX public cases_case_year_idx postgres
+3848; 1259 25211 INDEX public cases_created_at_idx postgres
+3851; 1259 25208 INDEX public cases_registration_no_idx postgres
+3852; 1259 25205 INDEX public cases_section_assigned_idx postgres
+3853; 1259 25210 INDEX public cases_sl_no_idx postgres
+3854; 1259 25204 INDEX public cases_status_idx postgres
+3891; 1259 25327 INDEX public complaint_documents_complaint_id_idx postgres
+3831; 1259 25200 INDEX public complaints_created_at_idx postgres
+3832; 1259 32789 INDEX public complaints_created_by_id_idx postgres
+3833; 1259 25348 INDEX public complaints_disability_type_id_idx postgres
+3834; 1259 25201 INDEX public complaints_linked_case_year_linked_case_id_idx postgres
+3837; 1259 25199 INDEX public complaints_reference_no_key postgres
+3894; 1259 25347 INDEX public disability_types_name_key postgres
+3881; 1259 25226 INDEX public documents_case_id_idx postgres
+3882; 1259 25227 INDEX public documents_created_at_idx postgres
+3871; 1259 25220 INDEX public forwarding_letters_case_id_idx postgres
+3874; 1259 25221 INDEX public forwarding_letters_status_idx postgres
+3932; 1259 65635 INDEX public idx_admin_password_resets_user postgres
+3965; 1259 65797 INDEX public idx_admin_user_logs_user postgres
+3925; 1259 65597 INDEX public idx_admin_users_phone postgres
+3855; 1259 115022 INDEX public idx_cases_priority postgres
+3856; 1259 115023 INDEX public idx_cases_priority_status postgres
+3937; 1259 65677 INDEX public idx_cms_media_album postgres
+3943; 1259 65670 INDEX public idx_cms_media_albums_sort postgres
+3938; 1259 65655 INDEX public idx_cms_media_uploaded_at postgres
+3950; 1259 65705 INDEX public idx_cms_menu_items_parent_id postgres
+3953; 1259 65725 INDEX public idx_cms_org_units_parent postgres
+3968; 1259 65823 INDEX public idx_cms_page_workflow_logs_page postgres
+3958; 1259 65760 INDEX public idx_cms_pages_status postgres
+3918; 1259 65580 INDEX public idx_whats_new_published postgres
+3824; 1259 74196 INDEX public idx_workflow_allowed_roles_gin postgres
+3897; 1259 25764 INDEX public issue_register_case_year_case_id_idx postgres
+3867; 1259 25219 INDEX public order_sheet_review_history_actor_id_idx postgres
+3868; 1259 25218 INDEX public order_sheet_review_history_order_sheet_id_idx postgres
+3862; 1259 25215 INDEX public order_sheets_case_id_idx postgres
+3865; 1259 25217 INDEX public order_sheets_prepared_by_id_idx postgres
+3866; 1259 25216 INDEX public order_sheets_status_idx postgres
+3903; 1259 32786 INDEX public public_registrations_created_at_idx postgres
+3906; 1259 32785 INDEX public public_registrations_registration_no_key postgres
+3907; 1259 32797 INDEX public public_registrations_user_id_key postgres
+3900; 1259 25765 INDEX public query_letters_case_year_case_id_idx postgres
+3825; 1259 74158 INDEX public uq_workflow_from_to_not_null postgres
+3826; 1259 74159 INDEX public uq_workflow_to_when_from_null postgres
+3838; 1259 25202 INDEX public users_email_key postgres
+3839; 1259 106817 INDEX public users_mobile_key postgres
+3908; 1259 32923 INDEX public ux_mv_case_summary postgres
+3910; 1259 32935 INDEX public ux_mv_commissioner_workload postgres
+3913; 1259 32957 INDEX public ux_mv_dashboard_cards postgres
+3912; 1259 32949 INDEX public ux_mv_dispatch_tracking postgres
+3909; 1259 32930 INDEX public ux_mv_legal_pendency postgres
+3911; 1259 32942 INDEX public ux_mv_registrar_queue postgres
+3827; 1259 25197 INDEX public workflow_transitions_from_status_to_status_idx postgres
+3830; 1259 25198 INDEX public workflow_transitions_to_status_idx postgres
+4080; 2620 65727 TRIGGER public cms_org_units trg_cms_org_units_updated_at postgres
+4064; 2606 65630 FK CONSTRAINT public admin_password_resets admin_password_resets_admin_user_id_fkey postgres
+4074; 2606 65792 FK CONSTRAINT public admin_user_logs admin_user_logs_user_id_fkey postgres
+4056; 2606 25307 FK CONSTRAINT public audit_logs audit_logs_user_id_fkey postgres
+4042; 2606 25237 FK CONSTRAINT public auth_sessions auth_sessions_user_id_fkey postgres
+4053; 2606 25292 FK CONSTRAINT public case_dispatch case_dispatch_case_year_case_id_fkey postgres
+4044; 2606 25247 FK CONSTRAINT public case_status_history case_status_history_case_year_case_id_fkey postgres
+4045; 2606 25252 FK CONSTRAINT public case_status_history case_status_history_changed_by_id_fkey postgres
+4043; 2606 25242 FK CONSTRAINT public cases cases_assigned_to_id_fkey postgres
+4079; 2606 156303 FK CONSTRAINT public cms_footer_links cms_footer_links_menu_item_id_fkey postgres
+4065; 2606 65671 FK CONSTRAINT public cms_media cms_media_album_id_fkey postgres
+4066; 2606 65650 FK CONSTRAINT public cms_media cms_media_uploaded_by_fkey postgres
+4068; 2606 65700 FK CONSTRAINT public cms_menu_items cms_menu_items_parent_id_fkey postgres
+4069; 2606 65720 FK CONSTRAINT public cms_org_units cms_org_units_parent_id_fkey postgres
+4071; 2606 65755 FK CONSTRAINT public cms_page_styles cms_page_styles_menu_item_id_fkey postgres
+4078; 2606 65832 FK CONSTRAINT public cms_page_tables cms_page_tables_menu_item_id_fkey postgres
+4072; 2606 65776 FK CONSTRAINT public cms_page_versions cms_page_versions_created_by_fkey postgres
+4073; 2606 65771 FK CONSTRAINT public cms_page_versions cms_page_versions_page_id_fkey postgres
+4075; 2606 65818 FK CONSTRAINT public cms_page_workflow_logs cms_page_workflow_logs_actor_id_fkey postgres
+4076; 2606 65813 FK CONSTRAINT public cms_page_workflow_logs cms_page_workflow_logs_menu_item_id_fkey postgres
+4077; 2606 65808 FK CONSTRAINT public cms_page_workflow_logs cms_page_workflow_logs_page_id_fkey postgres
+4070; 2606 65742 FK CONSTRAINT public cms_pages cms_pages_menu_item_id_fkey postgres
+4057; 2606 25328 FK CONSTRAINT public complaint_documents complaint_documents_complaint_id_fkey postgres
+4058; 2606 25333 FK CONSTRAINT public complaint_documents complaint_documents_uploaded_by_id_fkey postgres
+4039; 2606 32790 FK CONSTRAINT public complaints complaints_created_by_id_fkey postgres
+4040; 2606 25349 FK CONSTRAINT public complaints complaints_disability_type_id_fkey postgres
+4041; 2606 25232 FK CONSTRAINT public complaints complaints_linked_case_year_linked_case_id_fkey postgres
+4054; 2606 25297 FK CONSTRAINT public documents documents_case_year_case_id_fkey postgres
+4055; 2606 25302 FK CONSTRAINT public documents documents_uploaded_by_id_fkey postgres
+4067; 2606 65678 FK CONSTRAINT public cms_media_albums fk_cms_media_albums_cover postgres
+4050; 2606 25277 FK CONSTRAINT public forwarding_letters forwarding_letters_case_year_case_id_fkey postgres
+4051; 2606 25282 FK CONSTRAINT public forwarding_letters forwarding_letters_prepared_by_id_fkey postgres
+4052; 2606 25287 FK CONSTRAINT public forwarding_letters forwarding_letters_signed_by_id_fkey postgres
+4059; 2606 25766 FK CONSTRAINT public issue_register issue_register_case_year_case_id_fkey postgres
+4060; 2606 25771 FK CONSTRAINT public issue_register issue_register_created_by_id_fkey postgres
+4048; 2606 25272 FK CONSTRAINT public order_sheet_review_history order_sheet_review_history_actor_id_fkey postgres
+4049; 2606 25267 FK CONSTRAINT public order_sheet_review_history order_sheet_review_history_order_sheet_id_fkey postgres
+4046; 2606 25257 FK CONSTRAINT public order_sheets order_sheets_case_year_case_id_fkey postgres
+4047; 2606 25262 FK CONSTRAINT public order_sheets order_sheets_prepared_by_id_fkey postgres
+4063; 2606 32798 FK CONSTRAINT public public_registrations public_registrations_user_id_fkey postgres
+4061; 2606 25776 FK CONSTRAINT public query_letters query_letters_case_year_case_id_fkey postgres
+4062; 2606 25781 FK CONSTRAINT public query_letters query_letters_created_by_id_fkey postgres
+4248; 0 32919 MATERIALIZED VIEW DATA public mv_case_summary postgres
+4250; 0 32931 MATERIALIZED VIEW DATA public mv_commissioner_workload postgres
+4253; 0 32950 MATERIALIZED VIEW DATA public mv_dashboard_cards postgres
+4252; 0 32943 MATERIALIZED VIEW DATA public mv_dispatch_tracking postgres
+4249; 0 32924 MATERIALIZED VIEW DATA public mv_legal_pendency postgres
+4251; 0 32936 MATERIALIZED VIEW DATA public mv_registrar_queue postgres

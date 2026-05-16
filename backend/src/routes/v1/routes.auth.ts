@@ -6,10 +6,12 @@ import {
   loginSchema,
   registerSchema,
   refreshSchema,
+  verifyLoginOtpSchema,
 } from "../../schemas/auth.schemas.js";
 import {
   forgotPassword,
   login,
+  loginVerifyOtp,
   loginWithGoogle,
   register,
   refresh,
@@ -35,6 +37,9 @@ authRouter.post(
     }
 
     const result = await login(input.identifier, input.password);
+    if (!result.requiresOtp) {
+      throw new HttpError(500, "OTP verification must be completed before login.");
+    }
     res.json(result);
   }),
 );
@@ -44,6 +49,15 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const input = registerSchema.parse(req.body);
     const result = await register(input);
+    res.json(result);
+  }),
+);
+
+authRouter.post(
+  "/login/verify-otp",
+  asyncHandler(async (req, res) => {
+    const input = verifyLoginOtpSchema.parse(req.body);
+    const result = await loginVerifyOtp(input.otpRequestId, input.otp);
     res.json(result);
   }),
 );

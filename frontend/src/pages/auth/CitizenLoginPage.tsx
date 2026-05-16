@@ -6,6 +6,7 @@ import {
   useLogin,
   useMe,
   useCaptcha,
+  useVerifyLoginOtp,
 } from "../../lib/queries/auth.queries";
 import { roleHome } from "../../lib/auth";
 import { AuthLayout } from "../../components/layout/AuthLayout";
@@ -22,6 +23,7 @@ export function CitizenLoginPage() {
   const nav = useNavigate();
   const me = useMe();
   const login = useLogin();
+  const verifyLoginOtp = useVerifyLoginOtp();
   const googleLogin = useGoogleLogin();
   const captchaQuery = useCaptcha();
 
@@ -105,7 +107,17 @@ export function CitizenLoginPage() {
           solution: captchaSolution,
         },
       });
-      nav(roleHome(result.user.role));
+      if ("requiresOtp" in result && result.requiresOtp) {
+        const otp = window.prompt(result.message || "Enter OTP");
+        if (!otp) return;
+        const verified = await verifyLoginOtp.mutateAsync({
+          otpRequestId: result.otpRequestId,
+          otp: otp.trim(),
+        });
+        nav(roleHome(verified.user.role));
+        return;
+      }
+      throw new Error("OTP verification is required to login.");
     } catch {
       captchaQuery.refetch();
       setCaptchaSolution("");

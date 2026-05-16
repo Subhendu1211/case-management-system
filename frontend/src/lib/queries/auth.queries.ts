@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, publicApi } from "../api";
-import type { User } from "../types";
+import type { AuthLoginResult, AuthLoginSuccess, User } from "../types";
 import { setTokens } from "../auth";
 
 export function useMe() {
@@ -17,11 +17,18 @@ export function useLogin() {
       password: string;
       captcha?: { id: string; solution: string };
     }) =>
-      publicApi<{ accessToken: string; refreshToken: string; user: User }>(
+      publicApi<AuthLoginResult>(
         "POST",
         "/auth/login",
         input,
       ),
+  });
+}
+
+export function useVerifyLoginOtp() {
+  return useMutation({
+    mutationFn: (input: { otpRequestId: string; otp: string }) =>
+      publicApi<AuthLoginSuccess>("POST", "/auth/login/verify-otp", input),
     onSuccess: (data) => {
       setTokens({
         accessToken: data.accessToken,
