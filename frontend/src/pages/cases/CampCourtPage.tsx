@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { AppShell } from '../../components/layout/AppShell';
 import { useMe } from '../../lib/queries/auth.queries';
-import { navForRole } from './AdminShell';
+import { navForRole } from '../admin/AdminShell';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Modal } from '../../components/Modal';
-import { useCampCourtGroups, useCreateCampCourtGroup } from '../../lib/queries/campCourt.queries';
+import { useCampCourtGroups, useCreateCampCourtGroup } from './campCourt.queries';
 import type { CampCourtGroup } from '../../lib/types';
 
 export function CampCourtPage() {
@@ -103,7 +103,7 @@ export function CampCourtPage() {
 			</Modal>
 
 			{/* Photo Viewer Modal */}
-			<Modal open={!!viewingGroup} onClose={() => setViewingGroup(null)} title={viewingGroup?.title ?? ''} size="4xl">
+			<Modal open={!!viewingGroup} onClose={() => setViewingGroup(null)} title={viewingGroup?.title ?? ''}>
 				{viewingGroup && (
 					<div>
 						<p className="text-neutral-600 mb-4">{new Date(viewingGroup.date).toLocaleDateString()}</p>

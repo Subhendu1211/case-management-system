@@ -9,6 +9,7 @@ import {
   verifyRefreshToken,
 } from "./tokens.js";
 import { env } from "../../config/env.js";
+import { logger } from "../../config/logger.js";
 import {
   inferNotificationChannel,
   maskRecipient,
@@ -68,6 +69,10 @@ function normalizeIdentifier(identifier: string) {
     : identifier.trim();
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 type LoginOtpChallengeResponse = {
   requiresOtp: true;
   otpRequestId: string;
@@ -87,26 +92,43 @@ export async function login(
   password: string,
 ): Promise<LoginOtpChallengeResponse> {
   const normalized = normalizeIdentifier(identifier);
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: { equals: normalized, mode: "insensitive" } },
-        { mobile: normalized },
-      ],
-    },
-  });
-  if (!user || !user.isActive) throw new HttpError(401, "Invalid credentials");
+  const preferredChannel = inferNotificationChannel(normalized);
+  const user =
+    preferredChannel === "EMAIL"
+      ? await prisma.user.findFirst({
+          where: { email: { equals: normalized, mode: "insensitive" } },
+        })
+      : await prisma.user.findFirst({
+          where: { mobile: normalized },
+        });
+
+  if (!user) {
+    throw new HttpError(
+      404,
+      preferredChannel === "EMAIL"
+        ? "Email does not exist."
+        : "Mobile number does not exist.",
+    );
+  }
+  if (!user.isActive) throw new HttpError(401, "Account is inactive.");
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new HttpError(401, "Invalid credentials");
 
-  const preferredChannel = inferNotificationChannel(normalized);
   const emailTarget = user.email.trim();
   const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
-  if (!emailTarget || !smsTarget) {
+  const otpDeliveries: Array<{ channel: "EMAIL" | "SMS"; identifier: string }> =
+    [];
+  if (emailTarget) {
+    otpDeliveries.push({ channel: "EMAIL", identifier: emailTarget });
+  }
+  if (smsTarget) {
+    otpDeliveries.push({ channel: "SMS", identifier: smsTarget });
+  }
+  if (!otpDeliveries.length) {
     throw new HttpError(
       400,
-      "Both email and mobile number are required for OTP delivery. Please contact support.",
+      "No email/mobile destination is available for OTP delivery.",
     );
   }
 
@@ -129,42 +151,106 @@ export async function login(
     },
   });
 
-  const results = await Promise.allSettled([
-    sendLoginOtp({
-      channel: "EMAIL",
-      identifier: emailTarget,
-      otp,
-      expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
-    }),
-    sendLoginOtp({
-      channel: "SMS",
-      identifier: smsTarget,
-      otp,
-      expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
-    }),
-  ]);
-  const failed = results.some((result) => result.status === "rejected");
-
-  if (failed) {
-    await prisma.loginOtpChallenge.update({
-      where: { id: challenge.id },
-      data: { usedAt: new Date() },
-    });
-    throw new HttpError(
-      500,
-      "Unable to send OTP on email and SMS right now. Please try again.",
+  if (env.NODE_ENV !== "production") {
+    logger.info(
+      {
+        userId: user.id,
+        preferredChannel,
+        destinations: otpDeliveries.map((delivery) => ({
+          channel: delivery.channel,
+          destination: maskRecipient(delivery.identifier, delivery.channel),
+        })),
+        otpRequestId: challenge.id,
+        otp,
+        expiresAt: expiresAt.toISOString(),
+      },
+      "[DEV_LOGIN_OTP]",
     );
   }
+
+  const deliveryResults = await Promise.allSettled(
+    otpDeliveries.map((delivery) =>
+      sendLoginOtp({
+        channel: delivery.channel,
+        identifier: delivery.identifier,
+        otp,
+        expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
+      }),
+    ),
+  );
+
+  const successfulDeliveries: Array<{
+    channel: "EMAIL" | "SMS";
+    identifier: string;
+  }> = [];
+  const failedDeliveries: Array<{
+    channel: "EMAIL" | "SMS";
+    identifier: string;
+    deliveryError: string;
+  }> = [];
+
+  for (let index = 0; index < deliveryResults.length; index += 1) {
+    const result = deliveryResults[index];
+    const delivery = otpDeliveries[index];
+    if (result.status === "fulfilled") {
+      successfulDeliveries.push(delivery);
+      continue;
+    }
+    failedDeliveries.push({
+      channel: delivery.channel,
+      identifier: delivery.identifier,
+      deliveryError: getErrorMessage(result.reason),
+    });
+  }
+
+  if (failedDeliveries.length) {
+    logger.warn(
+      {
+        userId: user.id,
+        preferredChannel,
+        otpRequestId: challenge.id,
+        otp,
+        expiresAt: expiresAt.toISOString(),
+        failedDeliveries: failedDeliveries.map((failure) => ({
+          channel: failure.channel,
+          destination: maskRecipient(failure.identifier, failure.channel),
+          deliveryError: failure.deliveryError,
+        })),
+      },
+      "[LOGIN_OTP_DELIVERY_FAILED_OTP_LOGGED]",
+    );
+  }
+
+  const deliveryFailed = successfulDeliveries.length === 0;
+  const sentEmail = successfulDeliveries.find(
+    (delivery) => delivery.channel === "EMAIL",
+  );
+  const sentSms = successfulDeliveries.find(
+    (delivery) => delivery.channel === "SMS",
+  );
+  const recipientHint = sentEmail && sentSms
+    ? `${maskRecipient(sentEmail.identifier, "EMAIL")} & ${maskRecipient(
+        sentSms.identifier,
+        "SMS",
+      )}`
+    : sentEmail
+      ? maskRecipient(sentEmail.identifier, "EMAIL")
+      : sentSms
+        ? maskRecipient(sentSms.identifier, "SMS")
+        : `${maskRecipient(emailTarget, "EMAIL")}${smsTarget ? ` & ${maskRecipient(smsTarget, "SMS")}` : ""}`;
 
   return {
     requiresOtp: true,
     otpRequestId: challenge.id,
     channel: preferredChannel,
-    recipientHint: `${maskRecipient(emailTarget, "EMAIL")} & ${maskRecipient(
-      smsTarget,
-      "SMS",
-    )}`,
-    message: `OTP sent to your email ${maskRecipient(emailTarget, "EMAIL")} and mobile ${maskRecipient(smsTarget, "SMS")}.`,
+    recipientHint,
+    message: deliveryFailed
+      ? "OTP delivery failed. Use the OTP printed in the backend server log to continue."
+      : sentEmail && sentSms
+        ? `OTP sent to your email ${maskRecipient(sentEmail.identifier, "EMAIL")} and mobile ${maskRecipient(sentSms.identifier, "SMS")}.`
+        : sentEmail
+          ? `OTP sent to your email ${maskRecipient(sentEmail.identifier, "EMAIL")}.`
+          : `OTP sent to your mobile ${maskRecipient(sentSms!.identifier, "SMS")}.`,
   };
 }
 

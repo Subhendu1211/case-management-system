@@ -346,3 +346,15 @@ export type ComplaintDocumentLinked = ComplaintDocument & {
 	downloadUrl?: string;
 	source: 'complaint';
 };
+
+export type CampCourtPhoto = {
+	id: string;
+	url: string;
+};
+
+export type CampCourtGroup = {
+	id: string;
+	title: string;
+	date: string;
+	photos: CampCourtPhoto[];
+};

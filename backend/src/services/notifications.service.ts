@@ -79,6 +79,10 @@ function cleanProviderValue(value: string | undefined | null) {
 		.replace(/^['"]+|['"]+$/g, '');
 }
 
+function toSingleLine(value: string, limit = 300) {
+	return value.replace(/\s+/g, ' ').trim().slice(0, limit);
+}
+
 function normalizeDepartmentId(value: string | undefined | null) {
 	const cleaned = cleanProviderValue(value);
 	if (/^D[Oo]\d+$/i.test(cleaned)) {
@@ -87,13 +91,56 @@ function normalizeDepartmentId(value: string | undefined | null) {
 	return cleaned;
 }
 
+function getGovtSmsSourceCandidates() {
+	const forced = cleanProviderValue(env.GOVT_SMS_FORCE_SOURCE);
+	const primary = forced || cleanProviderValue(env.GOVT_SMS_SOURCE);
+	const fallbacks = String(env.GOVT_SMS_SOURCE_FALLBACKS ?? '')
+		.split(',')
+		.map((value) => cleanProviderValue(value))
+		.filter(Boolean);
+	return Array.from(new Set([primary, ...fallbacks].filter(Boolean)));
+}
+
+function isSenderDeptTemplateMismatchError(message: string) {
+	return /Sender\s*Id,\s*department\s*id\s*&\s*template\s*id\s*is\s*not\s*match/i.test(String(message || ''));
+}
+
 function normalizePhoneDigits(phone: string) {
-	const digits = String(phone ?? '').replace(/\D+/g, '');
+	let digits = String(phone ?? '').replace(/\D+/g, '');
 	if (digits.length < 10 || digits.length > 15) return null;
-	if (env.GOVT_SMS_FORCE_COUNTRY_CODE && digits.length === 10) {
-		const code = String(env.GOVT_SMS_COUNTRY_CODE || '91').replace(/\D+/g, '');
-		return code ? `${code}${digits}` : digits;
+
+	const forceCountryCode = Boolean(env.GOVT_SMS_FORCE_COUNTRY_CODE);
+	const stripCountryCode = Boolean(env.GOVT_SMS_STRIP_COUNTRY_CODE);
+	const countryCode = String(env.GOVT_SMS_COUNTRY_CODE || '91').replace(/\D+/g, '').trim();
+
+	// Normalize common entered patterns:
+	// 0091XXXXXXXXXX -> 91XXXXXXXXXX
+	// 0XXXXXXXXXX -> XXXXXXXXXX
+	// 091XXXXXXXXXX -> 91XXXXXXXXXX
+	if (digits.startsWith('00') && digits.length >= 12) {
+		digits = digits.slice(2);
 	}
+	if (digits.startsWith('0') && digits.length === 11) {
+		digits = digits.slice(1);
+	}
+	if (countryCode && digits.length === countryCode.length + 11 && digits.startsWith(`0${countryCode}`)) {
+		digits = digits.slice(1);
+	}
+
+	// For Indian DLT routes, 10-digit recipient numbers are usually expected.
+	if (!forceCountryCode && stripCountryCode && countryCode && digits.length === countryCode.length + 10 && digits.startsWith(countryCode)) {
+		return digits.slice(countryCode.length);
+	}
+
+	if (forceCountryCode && digits.length === 10) {
+		return countryCode ? `${countryCode}${digits}` : digits;
+	}
+
+	// Guard malformed lengths for Indian local delivery when strip mode is enabled.
+	if (!forceCountryCode && stripCountryCode && countryCode === '91' && digits.length !== 10) {
+		return null;
+	}
+
 	return digits;
 }
 
@@ -105,6 +152,36 @@ function buildSmsContent(template: string, value?: string) {
 	return `${template} ${value}`.trim();
 }
 
+function hasLegacySmsVariableToken(template: string) {
+	return /\{#\s*var\s*#\}/i.test(template) || /#\s*numeric\s*#/i.test(template) || /#\s*number\s*#/i.test(template);
+}
+
+function getGovtSmsOtpTemplate() {
+	const configured = cleanProviderValue(env.GOVT_SMS_OTP_CONTENT);
+	if (!configured) return DEFAULT_OTP_SMS_TEMPLATE;
+
+	const trimmed = String(configured).trim();
+	const hasOtpToken = /\{#\s*var\s*#\}/i.test(trimmed) || /#\s*numeric\s*#/i.test(trimmed) || /#\s*number\s*#/i.test(trimmed);
+
+	if (!hasOtpToken && /:\s*\{\s*$/.test(trimmed)) {
+		logger.warn('[GOVT_SMS] GOVT_SMS_OTP_CONTENT appears truncated; using default OTP template.');
+		return DEFAULT_OTP_SMS_TEMPLATE;
+	}
+
+	return configured;
+}
+
+function buildGovtSmsOtpContent(code: string) {
+	const template = getGovtSmsOtpTemplate();
+	const otp = String(code || '').trim();
+	const replaced = template
+		.replace(/\{#\s*var\s*#\}/gi, otp)
+		.replace(/#\s*numeric\s*#/gi, otp)
+		.replace(/#\s*number\s*#/gi, otp);
+	if (replaced !== template) return replaced;
+	return `${template} ${otp}`.trim();
+}
+
 function buildTemplatedSms(
 	template: string,
 	replacements: Record<string, string | number | undefined>,
@@ -112,6 +189,9 @@ function buildTemplatedSms(
 ) {
 	const withNamedTokens = buildMessageTemplate(template, replacements);
 	if (!variableFallback) return withNamedTokens;
+	// Only apply fallback when template uses legacy DLT variable placeholders.
+	// This avoids appending extra text that can cause template mismatch downstream.
+	if (!hasLegacySmsVariableToken(template)) return withNamedTokens;
 	return buildSmsContent(withNamedTokens, variableFallback);
 }
 
@@ -171,33 +251,53 @@ async function postWebhook(url: string, payload: Record<string, string>, channel
 	}
 }
 
-async function sendGovtSms(payload: SmsPayload) {
-	if (!hasGovtSmsConfig()) {
-		logger.info({ to: payload.to, text: payload.text }, '[SMS_NOTIFICATION_DISABLED]');
-		return;
-	}
-
-	const source = cleanProviderValue(env.GOVT_SMS_SOURCE);
+async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: string }) {
+	const source = cleanProviderValue(payload.sourceOverride || env.GOVT_SMS_SOURCE);
 	const departmentId = normalizeDepartmentId(env.GOVT_SMS_DEPARTMENT_ID);
 	const templateId = cleanProviderValue(payload.templateId || env.GOVT_SMS_TEMPLATE_ID);
 	const phone = normalizePhoneDigits(payload.to);
+	const action = cleanProviderValue(payload.action || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS');
 	if (!source || !departmentId || !templateId || !phone) {
 		logger.warn(
-			{ to: payload.to, hasSource: Boolean(source), hasDepartmentId: Boolean(departmentId), hasTemplateId: Boolean(templateId) },
+			{
+				to: payload.to,
+				hasSource: Boolean(source),
+				hasDepartmentId: Boolean(departmentId),
+				hasTemplateId: Boolean(templateId),
+				hasPhone: Boolean(phone)
+			},
 			'[SMS_NOTIFICATION_INVALID_CONFIG]'
 		);
-		return;
+		throw new Error('Govt SMS configuration is invalid or phone format is unsupported.');
+	}
+
+	if (env.SMS_DELIVERY_DEBUG_LOG) {
+		logger.info(
+			{
+				destination: maskMobile(phone),
+				phoneLength: phone.length,
+				countryCodePrefixed: phone.startsWith(String(env.GOVT_SMS_COUNTRY_CODE || '91').replace(/\D+/g, '')),
+				action,
+				source,
+				departmentId,
+				templateId
+			},
+			'[SMS_NOTIFICATION_ATTEMPT]'
+		);
 	}
 
 	const requestUrl = new URL(env.GOVT_SMS_API_URL);
 	const params = new URLSearchParams({
-		action: cleanProviderValue(payload.action || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS'),
+		action,
 		source,
 		department_id: departmentId,
 		template_id: templateId,
 		sms_content: payload.text,
 		phonenumber: phone
 	});
+	if (/\{#\s*var\s*#\}/i.test(String(payload.text)) || /#\s*numeric\s*#/i.test(String(payload.text)) || /#\s*number\s*#/i.test(String(payload.text))) {
+		throw new Error('OTP placeholder was not replaced in GOVT_SMS_OTP_CONTENT.');
+	}
 
 	await new Promise<void>((resolve, reject) => {
 		const transport = requestUrl.protocol === 'http:' ? http : https;
@@ -225,12 +325,33 @@ async function sendGovtSms(payload: SmsPayload) {
 					try {
 						const parsed = JSON.parse(body || '{}');
 						if (String(parsed.status) === '1') {
+							logger.info(
+								{
+									destination: maskMobile(phone),
+									action,
+									templateId,
+									statusCode: response.statusCode,
+									providerStatus: String(parsed.status),
+									providerMessage: toSingleLine(String(parsed.message ?? ''))
+								},
+								'[SMS_NOTIFICATION_SENT]'
+							);
 							resolve();
 							return;
 						}
 						reject(new Error(parsed.message || 'Govt SMS provider rejected request.'));
 					} catch {
 						if (/Message Send Successfully/i.test(body)) {
+							logger.info(
+								{
+									destination: maskMobile(phone),
+									action,
+									templateId,
+									statusCode: response.statusCode,
+									providerBody: toSingleLine(body)
+								},
+								'[SMS_NOTIFICATION_SENT]'
+							);
 							resolve();
 							return;
 						}
@@ -244,6 +365,44 @@ async function sendGovtSms(payload: SmsPayload) {
 		request.write(params.toString());
 		request.end();
 	});
+}
+
+async function sendGovtSms(payload: SmsPayload) {
+	if (!hasGovtSmsConfig()) {
+		logger.info({ to: payload.to, text: payload.text }, '[SMS_NOTIFICATION_DISABLED]');
+		return;
+	}
+
+	const candidates = getGovtSmsSourceCandidates();
+	if (!candidates.length) {
+		throw new Error('Govt SMS OTP is not configured. Set GOVT_SMS_SOURCE.');
+	}
+
+	let lastError: unknown = null;
+	for (let index = 0; index < candidates.length; index += 1) {
+		const sourceCandidate = candidates[index];
+		try {
+			await sendGovtSmsMessage({ ...payload, sourceOverride: sourceCandidate });
+			return;
+		} catch (error) {
+			lastError = error;
+			const canRetrySource =
+				index < candidates.length - 1 &&
+				isSenderDeptTemplateMismatchError(error instanceof Error ? error.message : String(error));
+			if (!canRetrySource) {
+				throw error;
+			}
+			logger.warn(
+				{
+					source: sourceCandidate,
+					reason: error instanceof Error ? error.message : String(error)
+				},
+				'[GOVT_SMS_SOURCE_RETRY]'
+			);
+		}
+	}
+
+	throw (lastError as Error) || new Error('Govt SMS provider rejected request.');
 }
 
 function logNotificationFailures(
@@ -316,7 +475,8 @@ export async function sendRegistrationSuccessNotification(input: {
 			sendSmsNotification({
 				to: input.mobile,
 				text: smsMessage,
-				templateId: env.GOVT_SMS_REGISTRATION_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+				templateId: env.GOVT_SMS_REGISTRATION_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID,
+				action: env.GOVT_SMS_REGISTRATION_ACTION || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS'
 			})
 		);
 	}
@@ -352,6 +512,17 @@ export async function sendComplaintSubmittedNotification(input: {
 		REFERENCE_NO: input.referenceNo,
 		SUBJECT: input.subject
 	});
+
+	if (env.SMS_DELIVERY_DEBUG_LOG) {
+		logger.info(
+			{
+				referenceNo: input.referenceNo,
+				templateId: env.GOVT_SMS_COMPLAINT_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID,
+				renderedSms: toSingleLine(smsMessage, 240)
+			},
+			'[COMPLAINT_SMS_TEMPLATE_RENDERED]'
+		);
+	}
 	const jobs: Promise<unknown>[] = [];
 
 	if (input.email) {
@@ -362,7 +533,8 @@ export async function sendComplaintSubmittedNotification(input: {
 			sendSmsNotification({
 				to: input.mobile,
 				text: smsMessage,
-				templateId: env.GOVT_SMS_COMPLAINT_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+				templateId: env.GOVT_SMS_COMPLAINT_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID,
+				action: env.GOVT_SMS_COMPLAINT_ACTION || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS'
 			})
 		);
 	}
@@ -409,8 +581,7 @@ export async function sendLoginOtp(input: {
 	otp: string;
 	expiresInSeconds: number;
 }) {
-	const otpTemplate = env.GOVT_SMS_OTP_CONTENT || DEFAULT_OTP_SMS_TEMPLATE;
-	const smsText = buildSmsContent(otpTemplate, input.otp);
+	const smsText = buildGovtSmsOtpContent(input.otp);
 	const emailTemplate = env.EMAIL_OTP_CONTENT || DEFAULT_OTP_EMAIL_TEMPLATE;
 	const emailText = buildMessageTemplate(emailTemplate, {
 		OTP: input.otp,
@@ -426,10 +597,78 @@ export async function sendLoginOtp(input: {
 		return;
 	}
 
-	await sendSmsNotification({
-		to: input.identifier,
-		text: smsText,
-		action: env.GOVT_SMS_OTP_ACTION,
-		templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
-	});
+	const primaryAction = cleanProviderValue(env.GOVT_SMS_OTP_ACTION || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS') || 'singleSMS';
+	const secondaryAction = 'singleSMS';
+	const shouldSendSecondary = Boolean(env.GOVT_SMS_OTP_SEND_BOTH_ACTIONS);
+	if (env.SMS_DELIVERY_DEBUG_LOG) {
+		logger.info(
+			{
+				destination: maskMobile(input.identifier),
+				primaryAction,
+				secondaryAction,
+				shouldSendSecondary
+			},
+			'[OTP_SMS_ACTION_PLAN]'
+		);
+	}
+
+	try {
+		await sendSmsNotification({
+			to: input.identifier,
+			text: smsText,
+			action: primaryAction,
+			templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+		});
+	} catch (error) {
+		if (primaryAction.toLowerCase() !== secondaryAction.toLowerCase()) {
+			logger.warn(
+				{
+					destination: maskMobile(input.identifier),
+					primaryAction,
+					secondaryAction,
+					reason: error instanceof Error ? error.message : String(error)
+				},
+				'[OTP_SMS_PRIMARY_ACTION_FAILED_RETRYING]'
+			);
+			await sendSmsNotification({
+				to: input.identifier,
+				text: smsText,
+				action: secondaryAction,
+				templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+			});
+			return;
+		}
+		throw error;
+	}
+
+	if (!shouldSendSecondary || primaryAction.toLowerCase() === secondaryAction.toLowerCase()) {
+		return;
+	}
+
+	try {
+		await sendSmsNotification({
+			to: input.identifier,
+			text: smsText,
+			action: secondaryAction,
+			templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+		});
+		logger.info(
+			{
+				destination: maskMobile(input.identifier),
+				primaryAction,
+				secondaryAction
+			},
+			'[OTP_SMS_SECONDARY_ACTION_SENT]'
+		);
+	} catch (error) {
+		logger.warn(
+			{
+				destination: maskMobile(input.identifier),
+				primaryAction,
+				secondaryAction,
+				reason: error instanceof Error ? error.message : String(error)
+			},
+			'[OTP_SMS_SECONDARY_ACTION_FAILED]'
+		);
+	}
 }

@@ -1,12 +1,15 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, publicApi } from "../api";
 import type { AuthLoginResult, AuthLoginSuccess, User } from "../types";
-import { setTokens } from "../auth";
+import { getAccessToken, setTokens } from "../auth";
 
 export function useMe() {
+  const hasAccessToken = Boolean(getAccessToken());
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: () => api<{ user: User }>("GET", "/auth/me"),
+    enabled: hasAccessToken,
+    retry: false,
   });
 }
 

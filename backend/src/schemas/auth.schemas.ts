@@ -9,7 +9,14 @@ const captchaSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1),
+  identifier: z
+    .string()
+    .trim()
+    .min(1)
+    .refine(
+      (value) => emailPattern.test(value) || phonePattern.test(value),
+      "Enter a valid email or mobile number",
+    ),
   password: z.string().min(1),
   captcha: captchaSchema.optional(), // kept optional for backwards compatibility; route enforces presence
 });

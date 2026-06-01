@@ -9,6 +9,7 @@ import { logger } from "./config/logger.js";
 import { requestId } from "./middleware/requestId.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { apiV1Router } from "./routes/v1/index.js";
+import fs from "fs";
 
 
 
@@ -77,6 +78,22 @@ export function createApp() {
     : path.resolve(process.cwd(), env.UPLOAD_DIR);
   app.use("/uploads", express.static(uploadDirAbs));
   app.use("/api/v1", apiV1Router);
+
+  const frontendDistDir = env.FRONTEND_DIST_DIR
+    ? path.resolve(env.FRONTEND_DIST_DIR)
+    : path.resolve(process.cwd(), "..", "frontend", "dist");
+
+  if (fs.existsSync(frontendDistDir)) {
+    app.use(express.static(frontendDistDir));
+
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/") || req.path === "/uploads" || req.path.startsWith("/uploads/")) {
+        return next();
+      }
+      res.sendFile(path.join(frontendDistDir, "index.html"));
+    });
+  }
+
   app.use(errorHandler);
 
   return app;

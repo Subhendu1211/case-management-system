@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+**/node_modules
+**/dist
+backend/uploads
+backend/build_output.txt
+backend/build_errors.txt
+docs
+db

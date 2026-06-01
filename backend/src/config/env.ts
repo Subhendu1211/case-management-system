@@ -15,6 +15,7 @@ const envSchema = z.object({
 	RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 	RATE_LIMIT_MAX: z.coerce.number().int().positive().default(600),
 	UPLOAD_DIR: z.string().default('uploads'),
+	FRONTEND_DIST_DIR: z.string().optional(),
 	GOOGLE_CLIENT_ID: z.string().optional().default('179354514031-hpipimke0r55gp1ps3fp6tsdq854ge18.apps.googleusercontent.com'),
 	LOGIN_OTP_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 	LOGIN_OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
@@ -36,6 +37,8 @@ const envSchema = z.object({
 	EMAIL_COMPLAINT_CONTENT: z.string().optional(),
 	GOVT_SMS_API_URL: z.string().url().default('https://govtsms.odisha.gov.in/api/api.php'),
 	GOVT_SMS_SOURCE: z.string().optional(),
+	GOVT_SMS_FORCE_SOURCE: z.string().optional(),
+	GOVT_SMS_SOURCE_FALLBACKS: z.string().optional(),
 	GOVT_SMS_DEPARTMENT_ID: z.string().optional(),
 	GOVT_SMS_TEMPLATE_ID: z.string().optional(),
 	GOVT_SMS_OTP_TEMPLATE_ID: z.string().optional(),
@@ -43,8 +46,22 @@ const envSchema = z.object({
 	GOVT_SMS_COMPLAINT_TEMPLATE_ID: z.string().optional(),
 	GOVT_SMS_DEFAULT_ACTION: z.string().default('singleSMS'),
 	GOVT_SMS_OTP_ACTION: z.string().default('sendOTPSMS'),
+	GOVT_SMS_REGISTRATION_ACTION: z.string().default('singleSMS'),
+	GOVT_SMS_COMPLAINT_ACTION: z.string().default('singleSMS'),
+	GOVT_SMS_OTP_SEND_BOTH_ACTIONS: z
+		.string()
+		.optional()
+		.transform((value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase())),
 	GOVT_SMS_COUNTRY_CODE: z.string().default('91'),
 	GOVT_SMS_FORCE_COUNTRY_CODE: z
+		.string()
+		.optional()
+		.transform((value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase())),
+	GOVT_SMS_STRIP_COUNTRY_CODE: z
+		.string()
+		.optional()
+		.transform((value) => !['0', 'false', 'no', 'off'].includes(String(value ?? 'true').trim().toLowerCase())),
+	SMS_DELIVERY_DEBUG_LOG: z
 		.string()
 		.optional()
 		.transform((value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase())),

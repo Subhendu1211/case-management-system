@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CampCourtGroup } from '../types';
+import type { CampCourtGroup } from '../../lib/types';
 
 // In a real app, this would be your API client, e.g., axios instance
 const api = {
