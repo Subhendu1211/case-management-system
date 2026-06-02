@@ -60,3 +60,34 @@ This repo is ready to run on Railway as a single service (frontend + backend in 
 Notes:
 - The container start command runs `prisma migrate deploy` automatically before starting the API.
 - Frontend static files are served by the backend from the same Railway domain.
+
+## Deploy on Render
+
+This repo is also ready to run on Render as a single Docker web service.
+
+1. In Render, create a new **Web Service** from this repo.
+2. Set **Root Directory** to `case-management-system`.
+3. Set **Runtime** to Docker. Render will use `case-management-system/Dockerfile`.
+4. Add a PostgreSQL database in Render and copy its internal `DATABASE_URL` into this web service.
+5. Add required environment variables in the web service:
+
+- `NODE_ENV=production`
+- `DATABASE_URL=<render internal postgres url>`
+- `JWT_ACCESS_SECRET=<at least 16 chars>`
+- `JWT_REFRESH_SECRET=<at least 16 chars>`
+- `CORS_ORIGIN=https://<your-render-service>.onrender.com`
+- `VITE_API_BASE_URL=/api/v1`
+
+6. Optional notification variables (only if you use them): `SMTP_*`, `EMAIL_*`, `GOVT_SMS_*`, webhook URLs.
+7. Set healthcheck path to `/api/v1/health`.
+8. Deploy.
+
+Generate strong JWT secrets locally with:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Notes:
+- Do not use the placeholder JWT secrets from `.env.example` in production.
+- Render injects `PORT` automatically; leave it unset unless you have a specific reason to override it.
