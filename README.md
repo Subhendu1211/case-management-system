@@ -91,3 +91,4 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Notes:
 - Do not use the placeholder JWT secrets from `.env.example` in production.
 - Render injects `PORT` automatically; leave it unset unless you have a specific reason to override it.
+- Set `CORS_ORIGIN` to the exact Render public URL if browsers report asset/API requests as blocked by CORS.

@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { pinoHttp } from "pino-http";
@@ -37,31 +37,41 @@ export function createApp() {
     .map((s) => s.trim())
     .filter(Boolean);
   app.use(
-    cors({
-      origin: (origin, cb) => {
-        // Allow non-browser requests (no Origin header)
-        if (!origin) return cb(null, true);
+    cors((req: express.Request, cb) => {
+      const origin = req.header("origin");
+      const host = req.header("host");
+      const forwardedProto = req.header("x-forwarded-proto")?.split(",")[0]?.trim();
+      const protocol = forwardedProto || req.protocol;
+      const requestOrigin = host ? `${protocol}://${host}` : undefined;
 
-        // In local dev, accept any localhost origin (Vite may choose another port)
-        if (
-          env.NODE_ENV !== "production" &&
-          /^(http:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
-        ) {
-          return cb(null, true);
-        }
+      const corsOptions: CorsOptions = {
+        origin: false,
+        credentials: true,
+        exposedHeaders: ["x-request-id"],
+      };
 
-        // Wildcard support for local dev
-        if (allowedOrigins.includes("*")) return cb(null, true);
+      const allowOrigin = () => cb(null, { ...corsOptions, origin: true });
 
-        // Exact match support for one-or-many origins (comma-separated)
-        if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (!origin) {
+        return allowOrigin();
+      }
 
-        return cb(new Error(`CORS blocked for origin: ${origin}`));
-      },
-      credentials: true,
-      exposedHeaders: ["x-request-id"],
+      if (requestOrigin && origin === requestOrigin) {
+        return allowOrigin();
+      }
+
+      const isLocalDevOrigin =
+        env.NODE_ENV !== "production" &&
+        /^(http:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+
+      if (isLocalDevOrigin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return allowOrigin();
+      }
+
+      return cb(new Error(`CORS blocked for origin: ${origin}`), corsOptions);
     }),
   );
+
   app.use(express.json({ limit: "2mb" }));
   app.use(
     rateLimit({
