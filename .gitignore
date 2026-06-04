@@ -15,3 +15,6 @@ dist/
 
 # Local DB dumps
 db/scpd_cms_local.dump
+
+# Runtime user uploads
+backend/uploads/

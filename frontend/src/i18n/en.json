@@ -22,6 +22,10 @@
       "status": "Official Government Portal - Secured",
       "ssl": "SSL Encrypted"
     },
+    "hostingDisclosure": {
+      "message": "This service is operated by the State Commissioner for Persons with Disabilities, Odisha and hosted on Render.",
+      "verify": "Verify through the official Government of Odisha SSEPD website"
+    },
     "footer": {
       "rights": "Government of Odisha. All rights reserved.",
       "terms": "Terms of Service",
