@@ -44,7 +44,7 @@
   },
   "auth": {
     "citizenLogin": {
-      "title": "Already Exist",
+      "title": "Existing Users",
       "subtitle": "Access your complaint status and profile.",
       "identifierLabel": "Email or Mobile Number",
       "identifierPlaceholder": "Enter your email or mobile number",

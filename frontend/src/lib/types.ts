@@ -36,6 +36,7 @@ export type AuthLoginOtpChallenge = {
 export type AuthLoginResult = AuthLoginSuccess | AuthLoginOtpChallenge;
 
 export type UserAdmin = User & {
+	mobile: string | null;
 	isActive: boolean;
 	createdAt: string;
 };

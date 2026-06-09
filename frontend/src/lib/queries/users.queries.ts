@@ -18,7 +18,8 @@ export function useUsers(params: { q?: string; role?: Role; page: number; pageSi
 export function useCreateUser() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (input: { name: string; email: string; password: string; role: Role }) => api<UserAdmin>('POST', '/users', input),
+		mutationFn: (input: { name: string; email: string; mobile: string; password: string; role: Role }) =>
+			api<UserAdmin>('POST', '/users', input),
 		onSuccess: async () => {
 			await qc.invalidateQueries({ queryKey: ['users'] });
 		}

@@ -28,12 +28,13 @@ export function AdminUsersPage() {
 
 	const [open, setOpen] = useState(false);
 	const create = useCreateUser();
-	const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' as Role });
+	const [form, setForm] = useState({ name: '', email: '', mobile: '', password: '', role: 'ADMIN' as Role });
 
 	const columns = useMemo<Column<UserAdmin>[]>(
 		() => [
 			{ key: 'name', header: 'Name', cell: (r) => r.name },
 			{ key: 'email', header: 'Email', cell: (r) => r.email },
+			{ key: 'mobile', header: 'Mobile', cell: (r) => r.mobile ?? '—' },
 			{ key: 'role', header: 'Role', cell: (r) => r.role },
 			{ key: 'isActive', header: 'Active', cell: (r) => (r.isActive ? 'Yes' : 'No') },
 			{ key: 'createdAt', header: 'Created', cell: (r) => new Date(r.createdAt).toLocaleString() }
@@ -49,7 +50,7 @@ export function AdminUsersPage() {
 			</div>
 
 			<div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-				<Input label="Search" placeholder="name or email" value={q} onChange={(e) => setQ(e.target.value)} />
+				<Input label="Search" placeholder="name, email, or mobile" value={q} onChange={(e) => setQ(e.target.value)} />
 				<label className="block">
 					<div className="mb-1 text-xs font-medium text-neutral-700">Role</div>
 					<select
@@ -111,11 +112,24 @@ export function AdminUsersPage() {
 						e.preventDefault();
 						await create.mutateAsync(form);
 						setOpen(false);
-						setForm({ name: '', email: '', password: '', role: 'ADMIN' });
+						setForm({ name: '', email: '', mobile: '', password: '', role: 'ADMIN' });
 					}}
 				>
 					<Input label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
 					<Input label="Email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
+					<Input
+						label="Mobile number"
+						type="tel"
+						inputMode="numeric"
+						autoComplete="tel"
+						placeholder="10 to 15 digit mobile number"
+						value={form.mobile}
+						onChange={(e) => setForm((f) => ({ ...f, mobile: e.target.value.replace(/\D/g, '').slice(0, 15) }))}
+						required
+						minLength={10}
+						maxLength={15}
+						pattern="[0-9]{10,15}"
+					/>
 					<Input
 						label="Password"
 						type="password"
