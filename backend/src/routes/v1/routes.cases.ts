@@ -62,22 +62,6 @@ const upload = multer({
 	limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-function toPublicUploadUrl(req: any, filePath: string) {
-	// Resolve UPLOAD_DIR to absolute path for consistent path calculation
-	const uploadDirAbs = path.isAbsolute(env.UPLOAD_DIR) 
-		? env.UPLOAD_DIR 
-		: path.resolve(process.cwd(), env.UPLOAD_DIR);
-	const storageKey = path.relative(uploadDirAbs, filePath).split(path.sep).join('/');
-	// Use relative URL to avoid protocol/host issues and CORS problems
-	return `/uploads/${storageKey}`;
-}
-
-function assertImageUpload(file: Express.Multer.File, fieldLabel: string) {
-	if (!file.mimetype?.startsWith('image/')) {
-		throw new HttpError(400, `${fieldLabel} must be an image file`);
-	}
-}
-
 casesRouter.use(authenticate);
 
 casesRouter.get(
@@ -248,69 +232,6 @@ casesRouter.post(
 				source: 'case'
 			}))
 		);
-	})
-);
-
-casesRouter.post(
-	'/:caseYear/:caseId/signature-assets',
-	upload.fields([
-		{ name: 'registrarSignature', maxCount: 1 },
-		{ name: 'commissionerSignature', maxCount: 1 },
-		{ name: 'commissionerStamp', maxCount: 1 }
-	]),
-	audit('cases', 'upload_signature_assets', 'case', (req) => req.params.caseId),
-	asyncHandler(async (req, res) => {
-		const caseYear = Number(req.params.caseYear);
-		const caseId = req.params.caseId;
-		const user = (req as any).user;
-		const item = await getCase(caseYear, caseId, user);
-
-		const files = (req.files as Record<string, Express.Multer.File[] | undefined>) ?? {};
-		const registrarSignature = files.registrarSignature?.[0];
-		const commissionerSignature = files.commissionerSignature?.[0];
-		const commissionerStamp = files.commissionerStamp?.[0];
-
-		if (!registrarSignature && !commissionerSignature && !commissionerStamp) {
-			throw new HttpError(400, 'No signature or stamp files provided');
-		}
-
-		const isAdmin = user?.role === 'ADMIN';
-		const isRegistrar = user?.role === 'REGISTRAR';
-		const isCommissioner = user?.role === 'COMMISSIONER';
-
-		if (registrarSignature) {
-			if (!(isRegistrar || isAdmin)) throw new HttpError(403, 'Only Registrar or Admin can upload registrar signature');
-			if (item.status !== 'REGISTRAR_INITIAL_REVIEW' && !isAdmin) {
-				throw new HttpError(409, 'Registrar signature can only be uploaded during Registrar initial review');
-			}
-			assertImageUpload(registrarSignature, 'Registrar signature');
-		}
-		if (commissionerSignature || commissionerStamp) {
-			if (!(isCommissioner || isAdmin)) throw new HttpError(403, 'Only Commissioner or Admin can upload commissioner signature/stamp');
-			if (item.status !== 'UNDER_REVIEW' && !isAdmin) {
-				throw new HttpError(409, 'Commissioner signature/stamp can only be uploaded during Commissioner review');
-			}
-		}
-		if (commissionerSignature) assertImageUpload(commissionerSignature, 'Commissioner signature');
-		if (commissionerStamp) assertImageUpload(commissionerStamp, 'Commissioner stamp');
-
-		const data: any = {};
-		if (registrarSignature) data.registrarSignatureData = toPublicUploadUrl(req, registrarSignature.path);
-		if (commissionerSignature) data.commissionerSignatureData = toPublicUploadUrl(req, commissionerSignature.path);
-		if (commissionerStamp) data.commissionerStampUrl = toPublicUploadUrl(req, commissionerStamp.path);
-
-		const updated = await prisma.case.update({
-			where: { caseYear_id: { caseYear, id: caseId } },
-			data
-		});
-
-		res.json({
-			caseYear: updated.caseYear,
-			caseId: updated.id,
-			registrarSignatureData: updated.registrarSignatureData,
-			commissionerSignatureData: updated.commissionerSignatureData,
-			commissionerStampUrl: updated.commissionerStampUrl
-		});
 	})
 );
 

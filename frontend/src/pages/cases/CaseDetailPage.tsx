@@ -5,7 +5,6 @@ import { Tabs } from '../../components/Tabs';
 import { Button } from '../../components/Button';
 import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
-import { SignatureImage } from '../../components/SignatureImage';
 import type { CaseDispatch, CaseStatus, DispatchChannel, DispatchType, ForwardingLetter, OrderSheet, Role, SectionAssigned, CasePriority } from '../../lib/types';
 import { downloadFile, resolveFileUrl } from '../../lib/api';
 import {
@@ -69,7 +68,6 @@ export function CaseDetailPage() {
 	const [remarksError, setRemarksError] = useState<string | null>(null);
 	const [statusModal, setStatusModal] = useState<null | { toStatus: CaseStatus; label: string }>(null);
 	const [statusRemarks, setStatusRemarks] = useState('');
-	const [statusSignatoryName, setStatusSignatoryName] = useState('');
 	const [statusError, setStatusError] = useState<string | null>(null);
 
 	const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
@@ -809,21 +807,6 @@ export function CaseDetailPage() {
 		}
 	}
 
-	function requiresRegistrarDigitalSign(toStatus: CaseStatus) {
-		return toStatus === 'ROUTED_TO_LEGAL' && detail.data?.status === 'REGISTRAR_INITIAL_REVIEW';
-	}
-
-	function requiresCommissionerDigitalSign(toStatus: CaseStatus) {
-		return toStatus === 'REVIEW_DONE' && detail.data?.status === 'UNDER_REVIEW';
-	}
-
-	function extractESignName(remarks: string | null | undefined, role: 'REGISTRAR' | 'COMMISSIONER') {
-		if (!remarks) return null;
-		const pattern = role === 'REGISTRAR' ? /\[ESIGN_REGISTRAR:([^\]]+)\]/ : /\[ESIGN_COMMISSIONER:([^\]]+)\]/;
-		const match = remarks.match(pattern);
-		return match?.[1]?.trim() || null;
-	}
-
 	function stripESignTag(remarks: string | null | undefined) {
 		if (!remarks) return '';
 		return remarks.replace(/\s*\[ESIGN_(?:REGISTRAR|COMMISSIONER):[^\]]+\]\s*/g, ' ').trim();
@@ -831,7 +814,6 @@ export function CaseDetailPage() {
 
 	function resetStatusActionState() {
 		setStatusRemarks('');
-		setStatusSignatoryName('');
 		setStatusError(null);
 	}
 
@@ -839,24 +821,7 @@ export function CaseDetailPage() {
 		setActionMessage(null);
 		setStatusError(null);
 		try {
-			const needsRegistrarESign = requiresRegistrarDigitalSign(toStatus);
-			const needsCommissionerESign = requiresCommissionerDigitalSign(toStatus);
-			const signatoryName = statusSignatoryName.trim();
-
-			if ((needsRegistrarESign || needsCommissionerESign) && !signatoryName) {
-				setStatusError('Signatory name is required for digital sign.');
-				return;
-			}
-
-			const baseRemarks = statusRemarks.trim();
-			const esignTag = needsRegistrarESign
-				? `[ESIGN_REGISTRAR:${signatoryName}]`
-				: needsCommissionerESign
-					? `[ESIGN_COMMISSIONER:${signatoryName}]`
-					: '';
-			const finalRemarks = esignTag ? `${esignTag} ${baseRemarks}`.trim() : baseRemarks;
-
-			await updateStatus.mutateAsync({ caseYear: cy, caseId: cid, newStatus: toStatus, remarks: finalRemarks });
+			await updateStatus.mutateAsync({ caseYear: cy, caseId: cid, newStatus: toStatus, remarks: statusRemarks.trim() });
 			setActionMessage(`Status updated to ${formatCaseStatus(toStatus)}`);
 			setStatusModal(null);
 			resetStatusActionState();
@@ -1171,119 +1136,6 @@ export function CaseDetailPage() {
 									</div>
 									<div className="mt-2 text-sm text-neutral-900">Channel: {complaint.channel}</div>
 									<div className="mt-1 text-sm text-neutral-900">Subject: {complaint.subject}</div>
-
-									{/* â”€â”€ Stamp / Sign panel (between Subject and Description) â”€â”€ */}
-									{(() => {
-										const status = detail.data?.status;
-										// Commissioner stamp: shown AFTER review is done (REVIEW_DONE onwards)
-										const showCommissionerStamp = [
-											'REVIEW_DONE', 'CASE_ACCEPTED', 'PS_POST_ACCEPTANCE',
-											'PA_INITIAL_REVIEW', 'REGISTRAR_INITIAL_REVIEW',
-											'ROUTED_TO_LEGAL', 'PROGRAMMER_REVIEW', 'STATIONERY_REVIEW',
-											'REGISTERED', 'ORDER_SHEET_DRAFTED', 'REGISTRAR_REVIEW',
-											'PA_TO_COMMISSIONER', 'COMMISSIONER_APPROVAL', 'APPROVED',
-											'PA_POST_APPROVAL', 'REGISTRAR_HANDOVER', 'LEGAL_FORWARDING',
-											'FORWARDING_STATIONERY', 'REGISTRAR_SIGNING', 'DISPATCH_PENDING', 'DISPATCHED', 'CLOSED'
-										].includes(status ?? '');
-										// Registrar sign: after Registrar initial review
-										const showRegistrarSign = [
-											'ROUTED_TO_LEGAL', 'PROGRAMMER_REVIEW', 'STATIONERY_REVIEW', 'REGISTERED',
-											'ORDER_SHEET_DRAFTED', 'REGISTRAR_REVIEW', 'PA_TO_COMMISSIONER',
-											'COMMISSIONER_APPROVAL', 'APPROVED', 'PA_POST_APPROVAL', 'REGISTRAR_HANDOVER',
-											'LEGAL_FORWARDING', 'FORWARDING_STATIONERY', 'REGISTRAR_SIGNING', 'DISPATCH_PENDING', 'DISPATCHED', 'CLOSED'
-										].includes(status ?? '');
-										const history = detail.data?.statusHistory ?? [];
-										// Find latest commissioner review-completion entry
-										const commissionerEntry = [...history].reverse().find(
-											(h: any) => h.oldStatus === 'UNDER_REVIEW' && h.newStatus === 'REVIEW_DONE'
-										);
-										// Find latest registrar initial-review completion entry
-										const registrarEntry = [...history].reverse().find(
-											(h: any) => h.oldStatus === 'REGISTRAR_INITIAL_REVIEW' && h.newStatus === 'ROUTED_TO_LEGAL'
-										);
-										const commissionerESignName =
-											extractESignName(commissionerEntry?.remarks, 'COMMISSIONER') ??
-											commissionerEntry?.changedBy?.name ??
-											'Commissioner';
-										const registrarESignName =
-											extractESignName(registrarEntry?.remarks, 'REGISTRAR') ??
-											registrarEntry?.changedBy?.name ??
-											'Registrar';
-										if (!showCommissionerStamp && !showRegistrarSign) return null;
-										return (
-											<div className="mt-3 flex flex-wrap items-start justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-												{/* Left: Diary/Case No reference */}
-												<div className="space-y-1">
-													<div className="font-medium text-sm text-neutral-800">
-														Dy. No. <span className="font-bold text-neutral-900">{detail.data?.registrationNo}</span>
-													</div>
-													{detail.data?.caseNo ? (
-														<div className="font-medium text-sm text-neutral-800">
-															Case No. <span className="font-bold text-neutral-900">{detail.data.caseNo}/{detail.data.caseYear}</span>
-														</div>
-													) : null}
-												</div>
-												{/* Middle: Registrar Sign */}
-												{showRegistrarSign ? (
-													<div className="flex flex-col items-center gap-1">
-														{detail.data?.registrarSignatureData ? (
-															<SignatureImage
-																src={detail.data?.registrarSignatureData || null}
-																altText="Registrar signature"
-																removeBackground={true}
-																showNotUploadedMessage={false}
-															/>
-														) : (
-															<div className="w-52 rounded border border-neutral-300 bg-neutral-100 p-2">
-																<div className="border-b border-neutral-300 pb-1 text-sm italic text-neutral-700">Signed with E-sign</div>
-																<div className="pt-1 text-xs font-semibold text-neutral-700">Signatory</div>
-																<div className="pt-1 text-sm text-neutral-900">{registrarESignName}</div>
-															</div>
-														)}
-														<div className="text-xs text-neutral-600 font-medium">Registrar Sign</div>
-														{registrarEntry ? (
-															<div className="text-xs text-neutral-500">{new Date(registrarEntry.changedAt).toLocaleDateString()}</div>
-														) : null}
-													</div>
-												) : null}
-												{/* Right: Commissioner Signature + Stamp */}
-												{showCommissionerStamp ? (
-													<div className="flex flex-col items-center gap-2">
-														{detail.data?.commissionerSignatureData || detail.data?.commissionerStampUrl ? (
-															<>
-																{detail.data?.commissionerSignatureData ? (
-																	<SignatureImage
-																		src={detail.data?.commissionerSignatureData || null}
-																		altText="Commissioner signature"
-																		removeBackground={true}
-																		showNotUploadedMessage={false}
-																	/>
-																) : null}
-																{detail.data?.commissionerStampUrl ? (
-																	<SignatureImage
-																		src={detail.data?.commissionerStampUrl || null}
-																		altText="Commissioner stamp"
-																		removeBackground={true}
-																		showNotUploadedMessage={false}
-																	/>
-																) : null}
-															</>
-														) : (
-															<div className="w-52 rounded border border-neutral-300 bg-neutral-100 p-2">
-																<div className="border-b border-neutral-300 pb-1 text-sm italic text-neutral-700">Signed with E-sign</div>
-																<div className="pt-1 text-xs font-semibold text-neutral-700">Signatory</div>
-																<div className="pt-1 text-sm text-neutral-900">{commissionerESignName}</div>
-															</div>
-														)}
-														<div className="text-xs text-neutral-600 font-medium">Commissioner</div>
-														{commissionerEntry ? (
-															<div className="text-xs text-neutral-500">{new Date(commissionerEntry.changedAt).toLocaleDateString()}</div>
-														) : null}
-													</div>
-												) : null}
-											</div>
-										);
-									})()}
 
 									<div className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">{complaint.description}</div>
 								</div>
@@ -1950,32 +1802,12 @@ export function CaseDetailPage() {
 				}}
 			>
 				<div className="space-y-3">
-					{(() => {
-						const needsESignName = statusModal
-							? requiresRegistrarDigitalSign(statusModal.toStatus) || requiresCommissionerDigitalSign(statusModal.toStatus)
-							: false;
-						return needsESignName ? (
-							<label className="block">
-								<div className="mb-1 text-xs font-medium text-neutral-700">Signatory name (required for E-sign)</div>
-								<input
-									type="text"
-									className="w-full rounded-lg border border-neutral-200 bg-neutral-0 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-									value={statusSignatoryName}
-									onChange={(e) => setStatusSignatoryName(e.target.value)}
-									placeholder="Enter signatory name"
-								/>
-							</label>
-						) : null;
-					})()}
 					<div className="text-sm text-neutral-700">A comment is required for this action.</div>
 					{statusError ? (
 						<div className="rounded-md bg-semantic-danger/10 px-3 py-2 text-sm text-semantic-danger" role="alert">
 							{statusError}
 						</div>
 					) : null}
-					<div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-						Digital signature is applied automatically for Registrar and Commissioner review actions. Upload is not required.
-					</div>
 					<label className="block">
 						<div className="mb-1 text-xs font-medium text-neutral-700">Comment</div>
 						<textarea
@@ -2000,9 +1832,6 @@ export function CaseDetailPage() {
 							variant="primary"
 							disabled={
 								!statusRemarks.trim() ||
-								(statusModal &&
-									(requiresRegistrarDigitalSign(statusModal.toStatus) || requiresCommissionerDigitalSign(statusModal.toStatus)) &&
-									!statusSignatoryName.trim()) ||
 								updateStatus.isPending ||
 								!statusModal
 							}

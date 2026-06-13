@@ -12,8 +12,6 @@ interface AuthLayoutProps {
   titleClassName?: string;
 }
 
-const OFFICIAL_SSEPD_URL = "https://ssepd.odisha.gov.in/";
-
 function OdishaLogo({ className }: { className?: string }) {
   return (
     <img
@@ -83,22 +81,6 @@ function LanguageToggle({ lang }: { lang: "en" | "or" }) {
   );
 }
 
-function OfficialHostingDisclosure() {
-  return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-      <p className="font-medium">{t("authLayout.hostingDisclosure.message")}</p>
-      <a
-        href={OFFICIAL_SSEPD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-1 inline-flex font-semibold text-gov-blue underline underline-offset-2 hover:text-gov-blue-dark"
-      >
-        {t("authLayout.hostingDisclosure.verify")}
-      </a>
-    </div>
-  );
-}
-
 export function AuthLayout({
   children,
   title,
@@ -127,10 +109,6 @@ export function AuthLayout({
 
         <div className="mb-3 flex w-full max-w-2xl justify-end">
           <LanguageToggle lang={lang} />
-        </div>
-
-        <div className="mb-4 w-full max-w-2xl">
-          <OfficialHostingDisclosure />
         </div>
 
         <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -309,10 +287,6 @@ export function AuthLayout({
         {/* Language switch */}
         <div className="flex w-full items-center justify-end px-6 pt-4 md:pt-5">
           <LanguageToggle lang={lang} />
-        </div>
-
-        <div className="px-6 pt-4">
-          <OfficialHostingDisclosure />
         </div>
 
         {/* Main form area (positioned toward top instead of vertically centered) */}

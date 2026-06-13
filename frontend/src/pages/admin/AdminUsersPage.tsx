@@ -9,11 +9,13 @@ import { useCreateUser, useUsers } from '../../lib/queries/users.queries';
 
 const roles: Role[] = [
 	'PRIVATE_SECRETARY',
+	'PRIVATE_ASSISTANT',
 	'COMMISSIONER',
 	'LEGAL_ASSISTANT',
 	'REGISTRAR',
 	'PROGRAMMER',
 	'STATIONERY',
+	'COMPUTER_ASSISTANT',
 	'ADMIN',
 	'CITIZEN'
 ];

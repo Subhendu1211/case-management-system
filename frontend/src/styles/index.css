@@ -1,5 +1,4 @@
 @import "./tokens.css";
-@import "./signatures.css";
 
 @tailwind base;
 @tailwind components;

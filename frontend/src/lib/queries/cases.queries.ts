@@ -177,27 +177,6 @@ export function useUpdateCaseStatus() {
 	});
 }
 
-export function useUploadCaseSignatureAssets(caseYear: number, caseId: string) {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: async (input: {
-			registrarSignature?: File;
-			commissionerSignature?: File;
-			commissionerStamp?: File;
-		}) => {
-			const form = new FormData();
-			if (input.registrarSignature) form.append('registrarSignature', input.registrarSignature);
-			if (input.commissionerSignature) form.append('commissionerSignature', input.commissionerSignature);
-			if (input.commissionerStamp) form.append('commissionerStamp', input.commissionerStamp);
-			return api<any>('POST', `/cases/${caseYear}/${caseId}/signature-assets`, form);
-		},
-		onSuccess: async () => {
-			await qc.invalidateQueries({ queryKey: ['cases', caseYear, caseId] });
-			await qc.invalidateQueries({ queryKey: ['cases', caseYear, caseId, 'activity'] });
-		}
-	});
-}
-
 export function useAssignCaseSection(caseYear: number, caseId: string) {
 	const qc = useQueryClient();
 	return useMutation({

@@ -275,8 +275,6 @@ export async function updateCaseStatusWithClient(
 		}
 	}
 
-	// Digital signatures are accepted for review transitions; image uploads are optional.
-
 	// Auto-adjust section when routed to specific teams
 	let sectionAssigned = current.sectionAssigned as any;
 	switch (input.newStatus as CaseStatus) {

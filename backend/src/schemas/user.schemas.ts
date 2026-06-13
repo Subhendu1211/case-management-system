@@ -13,6 +13,7 @@ export const createUserSchema = z.object({
 		'REGISTRAR',
 		'PROGRAMMER',
 		'STATIONERY',
+		'COMPUTER_ASSISTANT',
 		'ADMIN',
 		'CITIZEN'
 	])
@@ -29,6 +30,7 @@ export const listUsersSchema = z.object({
 			'REGISTRAR',
 			'PROGRAMMER',
 			'STATIONERY',
+			'COMPUTER_ASSISTANT',
 			'ADMIN',
 			'CITIZEN'
 		])
