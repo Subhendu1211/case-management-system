@@ -67,6 +67,15 @@ function maskEmail(value: string) {
 	return `${local.slice(0, 2)}***@${domain}`;
 }
 
+function isProduction() {
+	return env.NODE_ENV === 'production';
+}
+
+function isLocalOnlyEmail(value: string) {
+	const domain = String(value || '').split('@')[1]?.toLowerCase();
+	return Boolean(domain && (domain === 'localhost' || domain.endsWith('.local')));
+}
+
 function maskMobile(value: string) {
 	const digits = value.replace(/\D/g, '');
 	if (digits.length <= 4) return '****';
@@ -370,6 +379,9 @@ async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: strin
 async function sendGovtSms(payload: SmsPayload) {
 	if (!hasGovtSmsConfig()) {
 		logger.info({ to: payload.to, text: payload.text }, '[SMS_NOTIFICATION_DISABLED]');
+		if (isProduction()) {
+			throw new Error('SMS delivery is not configured.');
+		}
 		return;
 	}
 
@@ -417,6 +429,10 @@ function logNotificationFailures(
 }
 
 export async function sendEmailNotification(payload: EmailPayload) {
+	if (isProduction() && isLocalOnlyEmail(payload.to)) {
+		throw new Error('Email address uses a local-only domain and cannot receive OTP in production.');
+	}
+
 	if (env.EMAIL_NOTIFICATION_WEBHOOK_URL) {
 		await postWebhook(env.EMAIL_NOTIFICATION_WEBHOOK_URL, payload, 'EMAIL');
 		return;
@@ -425,6 +441,9 @@ export async function sendEmailNotification(payload: EmailPayload) {
 	const transport = getEmailTransport();
 	if (!transport || !env.SMTP_FROM) {
 		logger.info({ to: payload.to, subject: payload.subject, text: payload.text }, '[EMAIL_NOTIFICATION_DISABLED]');
+		if (isProduction()) {
+			throw new Error('Email delivery is not configured.');
+		}
 		return;
 	}
 

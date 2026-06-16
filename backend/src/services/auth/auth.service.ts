@@ -87,6 +87,33 @@ type LoginSuccessResponse = {
   user: { id: string; email: string; name: string; role: any };
 };
 
+type OtpDelivery = { channel: "EMAIL" | "SMS"; identifier: string };
+
+type OtpDeliveryResult =
+  | (OtpDelivery & { ok: true })
+  | (OtpDelivery & { ok: false; deliveryError: string });
+
+async function attemptLoginOtpDelivery(
+  delivery: OtpDelivery,
+  otp: string,
+): Promise<OtpDeliveryResult> {
+  try {
+    await sendLoginOtp({
+      channel: delivery.channel,
+      identifier: delivery.identifier,
+      otp,
+      expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
+    });
+    return { ...delivery, ok: true };
+  } catch (error) {
+    return {
+      ...delivery,
+      ok: false,
+      deliveryError: getErrorMessage(error),
+    };
+  }
+}
+
 export async function login(
   identifier: string,
   password: string,
@@ -117,14 +144,15 @@ export async function login(
 
   const emailTarget = user.email.trim();
   const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
-  const otpDeliveries: Array<{ channel: "EMAIL" | "SMS"; identifier: string }> =
-    [];
-  if (emailTarget) {
-    otpDeliveries.push({ channel: "EMAIL", identifier: emailTarget });
-  }
-  if (smsTarget) {
-    otpDeliveries.push({ channel: "SMS", identifier: smsTarget });
-  }
+  const smsDelivery: OtpDelivery | null = smsTarget
+    ? { channel: "SMS", identifier: smsTarget }
+    : null;
+  const emailDelivery: OtpDelivery | null = emailTarget
+    ? { channel: "EMAIL", identifier: emailTarget }
+    : null;
+  const otpDeliveries: OtpDelivery[] = [smsDelivery, emailDelivery].filter(
+    (delivery): delivery is OtpDelivery => Boolean(delivery),
+  );
   if (!otpDeliveries.length) {
     throw new HttpError(
       400,
@@ -145,7 +173,7 @@ export async function login(
       id: randomUUID(),
       userId: user.id,
       identifier: normalized,
-      channel: preferredChannel,
+      channel: smsDelivery ? "SMS" : preferredChannel,
       otpHash: await bcrypt.hash(otp, 10),
       expiresAt,
     },
@@ -168,48 +196,21 @@ export async function login(
     );
   }
 
-  const deliveryResults = await Promise.allSettled(
-    otpDeliveries.map((delivery) =>
-      sendLoginOtp({
-        channel: delivery.channel,
-        identifier: delivery.identifier,
-        otp,
-        expiresInSeconds: env.LOGIN_OTP_TTL_SECONDS,
-      }),
-    ),
-  );
+  const logFailedDeliveries = (
+    failedDeliveries: Array<
+      OtpDelivery & { deliveryError: string }
+    >,
+    marker = "[LOGIN_OTP_DELIVERY_FAILED_OTP_LOGGED]",
+    includeOtp = true,
+  ) => {
+    if (!failedDeliveries.length) return;
 
-  const successfulDeliveries: Array<{
-    channel: "EMAIL" | "SMS";
-    identifier: string;
-  }> = [];
-  const failedDeliveries: Array<{
-    channel: "EMAIL" | "SMS";
-    identifier: string;
-    deliveryError: string;
-  }> = [];
-
-  for (let index = 0; index < deliveryResults.length; index += 1) {
-    const result = deliveryResults[index];
-    const delivery = otpDeliveries[index];
-    if (result.status === "fulfilled") {
-      successfulDeliveries.push(delivery);
-      continue;
-    }
-    failedDeliveries.push({
-      channel: delivery.channel,
-      identifier: delivery.identifier,
-      deliveryError: getErrorMessage(result.reason),
-    });
-  }
-
-  if (failedDeliveries.length) {
     logger.warn(
       {
         userId: user.id,
         preferredChannel,
         otpRequestId: challenge.id,
-        otp,
+        ...(includeOtp ? { otp } : {}),
         expiresAt: expiresAt.toISOString(),
         failedDeliveries: failedDeliveries.map((failure) => ({
           channel: failure.channel,
@@ -217,9 +218,50 @@ export async function login(
           deliveryError: failure.deliveryError,
         })),
       },
-      "[LOGIN_OTP_DELIVERY_FAILED_OTP_LOGGED]",
+      marker,
     );
+  };
+
+  const deliveryOutcomes: OtpDeliveryResult[] = [];
+  const smsDeliveryPromise = smsDelivery
+    ? attemptLoginOtpDelivery(smsDelivery, otp)
+    : null;
+  const emailDeliveryPromise = emailDelivery
+    ? attemptLoginOtpDelivery(emailDelivery, otp)
+    : null;
+
+  if (smsDeliveryPromise) {
+    const smsOutcome = await smsDeliveryPromise;
+    deliveryOutcomes.push(smsOutcome);
+
+    if (emailDeliveryPromise) {
+      if (smsOutcome.ok) {
+        void emailDeliveryPromise.then((emailOutcome) => {
+          if (!emailOutcome.ok) {
+            logFailedDeliveries(
+              [emailOutcome],
+              "[LOGIN_OTP_EMAIL_DELIVERY_FAILED_SMS_SENT]",
+              false,
+            );
+          }
+        });
+      } else {
+        deliveryOutcomes.push(await emailDeliveryPromise);
+      }
+    }
+  } else if (emailDeliveryPromise) {
+    deliveryOutcomes.push(await emailDeliveryPromise);
   }
+
+  const successfulDeliveries = deliveryOutcomes.filter(
+    (outcome): outcome is OtpDelivery & { ok: true } => outcome.ok,
+  );
+  const failedDeliveries = deliveryOutcomes.filter(
+    (outcome): outcome is OtpDelivery & { ok: false; deliveryError: string } =>
+      !outcome.ok,
+  );
+
+  logFailedDeliveries(failedDeliveries);
 
   const deliveryFailed = successfulDeliveries.length === 0;
   const sentEmail = successfulDeliveries.find(
@@ -242,7 +284,7 @@ export async function login(
   return {
     requiresOtp: true,
     otpRequestId: challenge.id,
-    channel: preferredChannel,
+    channel: sentSms ? "SMS" : sentEmail ? "EMAIL" : preferredChannel,
     recipientHint,
     message: deliveryFailed
       ? "OTP delivery failed. Use the OTP printed in the backend server log to continue."
