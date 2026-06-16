@@ -25,6 +25,10 @@ const DEFAULT_REGISTRATION_SMS_TEMPLATE =
 	'SCPD, Govt. of Odisha: Your registration on the SCPD Portal has been completed successfully. You may now login using your registered credentials to access services. For assistance call 0674-2954518.';
 const DEFAULT_COMPLAINT_SMS_TEMPLATE =
 	'SCPD, Govt. of Odisha: Your complaint has been successfully submitted on SCPD Portal. It will be reviewed and necessary action will be taken. For assistance call 0674-2954518.';
+const DEFAULT_GOVT_SMS_SOURCE = 'ODIGOV';
+const DEFAULT_GOVT_SMS_SOURCE_FALLBACKS = ['ODSAMS'];
+const DEFAULT_GOVT_SMS_DEPARTMENT_ID = 'D056002';
+const DEFAULT_OTP_TEMPLATE_ID = '1007556907987287759';
 const DEFAULT_OTP_EMAIL_TEMPLATE = `Dear Citizen,
 
 {OTP} is your One Time Password (OTP) for login to the SCPD Portal. This OTP is confidential and valid for 15 minutes. You are advised not to share it with anyone. If you have not requested this OTP, please ignore this email.
@@ -102,11 +106,14 @@ function normalizeDepartmentId(value: string | undefined | null) {
 
 function getGovtSmsSourceCandidates() {
 	const forced = cleanProviderValue(env.GOVT_SMS_FORCE_SOURCE);
-	const primary = forced || cleanProviderValue(env.GOVT_SMS_SOURCE);
-	const fallbacks = String(env.GOVT_SMS_SOURCE_FALLBACKS ?? '')
-		.split(',')
-		.map((value) => cleanProviderValue(value))
-		.filter(Boolean);
+	const primary = forced || cleanProviderValue(env.GOVT_SMS_SOURCE) || DEFAULT_GOVT_SMS_SOURCE;
+	const configuredFallbacks = cleanProviderValue(env.GOVT_SMS_SOURCE_FALLBACKS);
+	const fallbacks = configuredFallbacks
+		? configuredFallbacks
+				.split(',')
+				.map((value) => cleanProviderValue(value))
+				.filter(Boolean)
+		: DEFAULT_GOVT_SMS_SOURCE_FALLBACKS;
 	return Array.from(new Set([primary, ...fallbacks].filter(Boolean)));
 }
 
@@ -151,6 +158,16 @@ function normalizePhoneDigits(phone: string) {
 	}
 
 	return digits;
+}
+
+function getGovtSmsDepartmentId() {
+	return normalizeDepartmentId(env.GOVT_SMS_DEPARTMENT_ID || DEFAULT_GOVT_SMS_DEPARTMENT_ID);
+}
+
+function getGovtSmsTemplateId(templateId?: string) {
+	return cleanProviderValue(
+		templateId || env.GOVT_SMS_TEMPLATE_ID || DEFAULT_OTP_TEMPLATE_ID
+	);
 }
 
 function buildSmsContent(template: string, value?: string) {
@@ -230,7 +247,11 @@ function getEmailTransport() {
 }
 
 function hasGovtSmsConfig() {
-	return Boolean(env.GOVT_SMS_SOURCE && env.GOVT_SMS_DEPARTMENT_ID);
+	return Boolean(
+		getGovtSmsSourceCandidates().length &&
+			getGovtSmsDepartmentId() &&
+			getGovtSmsTemplateId(env.GOVT_SMS_OTP_TEMPLATE_ID)
+	);
 }
 
 export function inferNotificationChannel(identifier: string): NotificationChannel {
@@ -261,9 +282,9 @@ async function postWebhook(url: string, payload: Record<string, string>, channel
 }
 
 async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: string }) {
-	const source = cleanProviderValue(payload.sourceOverride || env.GOVT_SMS_SOURCE);
-	const departmentId = normalizeDepartmentId(env.GOVT_SMS_DEPARTMENT_ID);
-	const templateId = cleanProviderValue(payload.templateId || env.GOVT_SMS_TEMPLATE_ID);
+	const source = cleanProviderValue(payload.sourceOverride || env.GOVT_SMS_SOURCE || DEFAULT_GOVT_SMS_SOURCE);
+	const departmentId = getGovtSmsDepartmentId();
+	const templateId = getGovtSmsTemplateId(payload.templateId);
 	const phone = normalizePhoneDigits(payload.to);
 	const action = cleanProviderValue(payload.action || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS');
 	if (!source || !departmentId || !templateId || !phone) {
@@ -307,6 +328,16 @@ async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: strin
 	if (/\{#\s*var\s*#\}/i.test(String(payload.text)) || /#\s*numeric\s*#/i.test(String(payload.text)) || /#\s*number\s*#/i.test(String(payload.text))) {
 		throw new Error('OTP placeholder was not replaced in GOVT_SMS_OTP_CONTENT.');
 	}
+	const logMeta = {
+		endpoint: `${requestUrl.hostname}${requestUrl.pathname}`,
+		destination: maskMobile(phone),
+		phoneLength: phone.length,
+		countryCodePrefixed: phone.startsWith(String(env.GOVT_SMS_COUNTRY_CODE || '91').replace(/\D+/g, '')),
+		action,
+		source,
+		departmentId,
+		templateId
+	};
 
 	await new Promise<void>((resolve, reject) => {
 		const transport = requestUrl.protocol === 'http:' ? http : https;
@@ -328,6 +359,10 @@ async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: strin
 				});
 				response.on('end', () => {
 					if (!(response.statusCode && response.statusCode >= 200 && response.statusCode < 300)) {
+						logger.warn(
+							{ ...logMeta, statusCode: response.statusCode || null, providerBody: toSingleLine(body, 1000) },
+							'[SMS_NOTIFICATION_HTTP_ERROR]'
+						);
 						reject(new Error(`Govt SMS failed: ${response.statusCode || 'unknown'} ${body}`));
 						return;
 					}
@@ -348,6 +383,16 @@ async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: strin
 							resolve();
 							return;
 						}
+						logger.warn(
+							{
+								...logMeta,
+								statusCode: response.statusCode,
+								providerStatus: String(parsed.status ?? ''),
+								providerMessage: toSingleLine(String(parsed.message ?? ''), 1000),
+								providerBody: toSingleLine(body, 1000)
+							},
+							'[SMS_NOTIFICATION_PROVIDER_REJECT]'
+						);
 						reject(new Error(parsed.message || 'Govt SMS provider rejected request.'));
 					} catch {
 						if (/Message Send Successfully/i.test(body)) {
@@ -364,13 +409,20 @@ async function sendGovtSmsMessage(payload: SmsPayload & { sourceOverride?: strin
 							resolve();
 							return;
 						}
+						logger.warn(
+							{ ...logMeta, statusCode: response.statusCode, providerBody: toSingleLine(body, 1000) },
+							'[SMS_NOTIFICATION_UNEXPECTED_RESPONSE]'
+						);
 						reject(new Error(`Govt SMS returned unexpected response: ${body}`));
 					}
 				});
 			}
 		);
 
-		request.on('error', reject);
+		request.on('error', (error) => {
+			logger.warn({ ...logMeta, error: error.message }, '[SMS_NOTIFICATION_NETWORK_ERROR]');
+			reject(error);
+		});
 		request.write(params.toString());
 		request.end();
 	});
@@ -398,16 +450,15 @@ async function sendGovtSms(payload: SmsPayload) {
 			return;
 		} catch (error) {
 			lastError = error;
-			const canRetrySource =
-				index < candidates.length - 1 &&
-				isSenderDeptTemplateMismatchError(error instanceof Error ? error.message : String(error));
+			const canRetrySource = index < candidates.length - 1;
 			if (!canRetrySource) {
 				throw error;
 			}
 			logger.warn(
 				{
 					source: sourceCandidate,
-					reason: error instanceof Error ? error.message : String(error)
+					reason: error instanceof Error ? error.message : String(error),
+					mappingRejected: isSenderDeptTemplateMismatchError(error instanceof Error ? error.message : String(error))
 				},
 				'[GOVT_SMS_SOURCE_RETRY]'
 			);
