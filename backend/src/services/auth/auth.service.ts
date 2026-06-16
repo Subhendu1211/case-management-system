@@ -281,6 +281,15 @@ export async function login(
         ? maskRecipient(sentSms.identifier, "SMS")
         : `${maskRecipient(emailTarget, "EMAIL")}${smsTarget ? ` & ${maskRecipient(smsTarget, "SMS")}` : ""}`;
 
+  if (deliveryFailed && env.NODE_ENV === "production") {
+    throw new HttpError(
+      502,
+      smsTarget
+        ? "OTP SMS delivery failed. Please check the mobile number and SMS gateway configuration."
+        : "OTP email delivery failed. Please check the email gateway configuration.",
+    );
+  }
+
   return {
     requiresOtp: true,
     otpRequestId: challenge.id,
