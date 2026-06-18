@@ -38,6 +38,15 @@ For any assistance, you may contact: Phone: 0674-2954518
 Regards,
 State Commissioner for Persons with Disabilities (SCPD)
 Government of Odisha`;
+const DEFAULT_PASSWORD_RESET_OTP_EMAIL_TEMPLATE = `Dear Citizen,
+
+{OTP} is your One Time Password (OTP) for password reset on the SCPD Portal. This OTP is confidential and valid for {EXPIRES_MINUTES} minutes. You are advised not to share it with anyone. If you have not requested this password reset, please ignore this email.
+
+For any assistance, you may contact: Phone: 0674-2954518
+
+Regards,
+State Commissioner for Persons with Disabilities (SCPD)
+Government of Odisha`;
 const DEFAULT_REGISTRATION_EMAIL_TEMPLATE = `Dear Citizen,
 
 Greetings from the State Commissioner for Persons with Disabilities (SCPD), Government of Odisha.
@@ -740,5 +749,60 @@ export async function sendLoginOtp(input: {
 			},
 			'[OTP_SMS_SECONDARY_ACTION_FAILED]'
 		);
+	}
+}
+
+export async function sendPasswordResetOtp(input: {
+	channel: NotificationChannel;
+	identifier: string;
+	otp: string;
+	expiresInSeconds: number;
+}) {
+	const smsText = buildGovtSmsOtpContent(input.otp);
+	const emailTemplate =
+		env.EMAIL_PASSWORD_RESET_OTP_CONTENT || DEFAULT_PASSWORD_RESET_OTP_EMAIL_TEMPLATE;
+	const emailText = buildMessageTemplate(emailTemplate, {
+		OTP: input.otp,
+		EXPIRES_MINUTES: Math.ceil(input.expiresInSeconds / 60)
+	});
+
+	if (input.channel === 'EMAIL') {
+		await sendEmailNotification({
+			to: input.identifier,
+			subject: 'Your Password Reset OTP',
+			text: emailText
+		});
+		return;
+	}
+
+	const primaryAction = cleanProviderValue(env.GOVT_SMS_OTP_ACTION || env.GOVT_SMS_DEFAULT_ACTION || 'singleSMS') || 'singleSMS';
+	const secondaryAction = 'singleSMS';
+	try {
+		await sendSmsNotification({
+			to: input.identifier,
+			text: smsText,
+			action: primaryAction,
+			templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+		});
+	} catch (error) {
+		if (primaryAction.toLowerCase() !== secondaryAction.toLowerCase()) {
+			logger.warn(
+				{
+					destination: maskMobile(input.identifier),
+					primaryAction,
+					secondaryAction,
+					reason: error instanceof Error ? error.message : String(error)
+				},
+				'[PASSWORD_RESET_OTP_SMS_PRIMARY_ACTION_FAILED_RETRYING]'
+			);
+			await sendSmsNotification({
+				to: input.identifier,
+				text: smsText,
+				action: secondaryAction,
+				templateId: env.GOVT_SMS_OTP_TEMPLATE_ID || env.GOVT_SMS_TEMPLATE_ID
+			});
+			return;
+		}
+		throw error;
 	}
 }

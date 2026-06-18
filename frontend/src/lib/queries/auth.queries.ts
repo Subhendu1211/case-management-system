@@ -64,10 +64,27 @@ export function useForgotPassword() {
       identifier: string;
       captcha: { id: string; solution: string };
     }) =>
-      publicApi<{ message: string }>("POST", "/auth/forgot-password", {
+      publicApi<{
+        resetRequestId: string;
+        channel: "EMAIL" | "SMS";
+        recipientHint: string;
+        message: string;
+      }>("POST", "/auth/forgot-password", {
         identifier: input.identifier,
         captcha: input.captcha,
       }),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (input: {
+      resetRequestId: string;
+      otp: string;
+      password: string;
+      confirmPassword: string;
+    }) =>
+      publicApi<{ message: string }>("POST", "/auth/reset-password", input),
   });
 }
 

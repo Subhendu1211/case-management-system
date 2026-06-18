@@ -5,6 +5,7 @@ import {
   googleLoginSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   refreshSchema,
   verifyLoginOtpSchema,
 } from "../../schemas/auth.schemas.js";
@@ -14,6 +15,7 @@ import {
   loginVerifyOtp,
   loginWithGoogle,
   register,
+  resetPassword,
   refresh,
 } from "../../services/auth/auth.service.js";
 import { authenticate } from "../../middleware/auth.js";
@@ -70,6 +72,15 @@ authRouter.post(
       throw new HttpError(400, "Invalid captcha");
     }
     const result = await forgotPassword(input.identifier);
+    res.json(result);
+  }),
+);
+
+authRouter.post(
+  "/reset-password",
+  asyncHandler(async (req, res) => {
+    const input = resetPasswordSchema.parse(req.body);
+    const result = await resetPassword(input);
     res.json(result);
   }),
 );

@@ -14,6 +14,7 @@ import {
   inferNotificationChannel,
   maskRecipient,
   sendLoginOtp,
+  sendPasswordResetOtp,
   sendRegistrationSuccessNotification,
 } from "../notifications.service.js";
 
@@ -55,7 +56,10 @@ async function issueSession(user: {
   };
 }
 
-import { RegisterInput } from "../../schemas/auth.schemas.js";
+import type {
+  RegisterInput,
+  ResetPasswordInput,
+} from "../../schemas/auth.schemas.js";
 
 function generateNumericOtp(length: number) {
   const min = 10 ** (length - 1);
@@ -85,6 +89,13 @@ type LoginSuccessResponse = {
   accessToken: string;
   refreshToken: string;
   user: { id: string; email: string; name: string; role: any };
+};
+
+type PasswordResetChallengeResponse = {
+  resetRequestId: string;
+  channel: "EMAIL" | "SMS";
+  recipientHint: string;
+  message: string;
 };
 
 type OtpDelivery = { channel: "EMAIL" | "SMS"; identifier: string };
@@ -389,21 +400,173 @@ export async function register(data: RegisterInput) {
 
 export async function forgotPassword(identifier: string) {
   const value = normalizeIdentifier(identifier);
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: { equals: value, mode: "insensitive" } }, { mobile: value }],
-    },
-  });
+  const preferredChannel = inferNotificationChannel(value);
+  const user =
+    preferredChannel === "EMAIL"
+      ? await prisma.user.findFirst({
+          where: { email: { equals: value, mode: "insensitive" } },
+        })
+      : await prisma.user.findFirst({
+          where: { mobile: value },
+        });
+
   if (!user) {
-    // return success even if user not found to prevent enumeration
-    return { message: "If an account exists, a reset link has been sent." };
+    throw new HttpError(
+      404,
+      preferredChannel === "EMAIL"
+        ? "Email does not exist."
+        : "Mobile number does not exist.",
+    );
+  }
+  if (!user.isActive) {
+    throw new HttpError(401, "Account is inactive.");
   }
 
-  // TODO: Implement actual email sending logic here
-  // For now, valid placeholders are fine.
-  console.log(`[ForgotPassword] Reset link requested for ${value}`);
+  const emailTarget = user.email.trim();
+  const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
+  const delivery =
+    preferredChannel === "SMS"
+      ? smsTarget
+        ? { channel: "SMS" as const, identifier: smsTarget }
+        : null
+      : emailTarget
+        ? { channel: "EMAIL" as const, identifier: emailTarget }
+        : null;
 
-  return { message: "If an account exists, a reset link has been sent." };
+  if (!delivery) {
+    throw new HttpError(
+      400,
+      "No email/mobile destination is available for OTP delivery.",
+    );
+  }
+
+  const otp = generateNumericOtp(env.PASSWORD_RESET_OTP_LENGTH);
+  const expiresAt = addSeconds(new Date(), env.PASSWORD_RESET_OTP_TTL_SECONDS);
+
+  await prisma.passwordResetChallenge.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
+  const challenge = await prisma.passwordResetChallenge.create({
+    data: {
+      id: randomUUID(),
+      userId: user.id,
+      identifier: value,
+      channel: delivery.channel,
+      otpHash: await bcrypt.hash(otp, 10),
+      expiresAt,
+    },
+  });
+
+  if (env.NODE_ENV !== "production") {
+    logger.info(
+      {
+        userId: user.id,
+        channel: delivery.channel,
+        destination: maskRecipient(delivery.identifier, delivery.channel),
+        resetRequestId: challenge.id,
+        otp,
+        expiresAt: expiresAt.toISOString(),
+      },
+      "[DEV_PASSWORD_RESET_OTP]",
+    );
+  }
+
+  let deliveryFailed = false;
+  try {
+    await sendPasswordResetOtp({
+      channel: delivery.channel,
+      identifier: delivery.identifier,
+      otp,
+      expiresInSeconds: env.PASSWORD_RESET_OTP_TTL_SECONDS,
+    });
+  } catch (error) {
+    deliveryFailed = true;
+    logger.warn(
+      {
+        userId: user.id,
+        channel: delivery.channel,
+        destination: maskRecipient(delivery.identifier, delivery.channel),
+        resetRequestId: challenge.id,
+        deliveryError: getErrorMessage(error),
+        ...(env.NODE_ENV !== "production" ? { otp } : {}),
+      },
+      "[PASSWORD_RESET_OTP_DELIVERY_FAILED]",
+    );
+    if (env.NODE_ENV === "production") {
+      throw new HttpError(
+        502,
+        delivery.channel === "SMS"
+          ? "OTP SMS delivery failed. Please check the mobile number and SMS gateway configuration."
+          : "OTP email delivery failed. Please check the email gateway configuration.",
+      );
+    }
+  }
+
+  const recipientHint = maskRecipient(delivery.identifier, delivery.channel);
+  return {
+    resetRequestId: challenge.id,
+    channel: delivery.channel,
+    recipientHint,
+    message: deliveryFailed
+      ? "OTP delivery failed. Use the OTP printed in the backend server log to continue."
+      : delivery.channel === "SMS"
+        ? `OTP sent to your mobile ${recipientHint}.`
+        : `OTP sent to your email ${recipientHint}.`,
+  } satisfies PasswordResetChallengeResponse;
+}
+
+export async function resetPassword(input: ResetPasswordInput) {
+  const challenge = await prisma.passwordResetChallenge.findUnique({
+    where: { id: input.resetRequestId },
+    include: { user: true },
+  });
+
+  if (!challenge || challenge.usedAt || challenge.expiresAt <= new Date()) {
+    throw new HttpError(401, "OTP expired or invalid. Please request a new code.");
+  }
+
+  if (challenge.attempts >= env.PASSWORD_RESET_OTP_MAX_ATTEMPTS) {
+    await prisma.passwordResetChallenge.update({
+      where: { id: challenge.id },
+      data: { usedAt: new Date() },
+    });
+    throw new HttpError(401, "OTP attempts exceeded. Please request a new code.");
+  }
+
+  const validOtp = await bcrypt.compare(input.otp.trim(), challenge.otpHash);
+  if (!validOtp) {
+    await prisma.passwordResetChallenge.update({
+      where: { id: challenge.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw new HttpError(401, "Invalid OTP.");
+  }
+
+  if (!challenge.user.isActive) {
+    throw new HttpError(401, "Account is inactive.");
+  }
+
+  const now = new Date();
+  const passwordHash = await bcrypt.hash(input.password, 10);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: challenge.userId },
+      data: { passwordHash },
+    }),
+    prisma.passwordResetChallenge.update({
+      where: { id: challenge.id },
+      data: { usedAt: now },
+    }),
+    prisma.authSession.updateMany({
+      where: { userId: challenge.userId, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+  ]);
+
+  return { message: "Password updated successfully. You may now sign in." };
 }
 
 export async function loginWithGoogle(idToken: string) {

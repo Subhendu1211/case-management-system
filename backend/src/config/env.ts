@@ -20,6 +20,9 @@ const envSchema = z.object({
 	LOGIN_OTP_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 	LOGIN_OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
 	LOGIN_OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+	PASSWORD_RESET_OTP_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+	PASSWORD_RESET_OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
+	PASSWORD_RESET_OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
 	EMAIL_NOTIFICATION_WEBHOOK_URL: z.string().url().optional(),
 	SMS_NOTIFICATION_WEBHOOK_URL: z.string().url().optional(),
 	NOTIFICATION_WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
@@ -33,6 +36,7 @@ const envSchema = z.object({
 		.optional()
 		.transform((value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase())),
 	EMAIL_OTP_CONTENT: z.string().optional(),
+	EMAIL_PASSWORD_RESET_OTP_CONTENT: z.string().optional(),
 	EMAIL_REGISTRATION_CONTENT: z.string().optional(),
 	EMAIL_COMPLAINT_CONTENT: z.string().optional(),
 	GOVT_SMS_API_URL: z.string().url().default('https://govtsms.odisha.gov.in/api/api.php'),
