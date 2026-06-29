@@ -5,6 +5,7 @@ import { districts } from "../../lib/constants/districts";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { t, useLang } from "../../i18n";
+import { validatePasswordPolicy } from "../../lib/passwordPolicy";
 
 function SectionHeader({
   step,
@@ -74,7 +75,7 @@ export function RegistrationPage() {
     if (!form.email.trim()) next.email = t("auth.register.errors.emailRequired");
     if (!form.mobile.trim()) next.mobile = t("auth.register.errors.mobileRequired");
     if (!form.password) next.password = t("auth.register.errors.passwordRequired");
-    if (form.password.length < 8)
+    else if (validatePasswordPolicy(form.password))
       next.password = t("auth.register.errors.passwordMin");
     if (form.password !== form.confirmPassword)
       next.confirmPassword = t("auth.register.errors.passwordMismatch");

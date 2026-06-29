@@ -23,6 +23,18 @@ export function createApp() {
   app.set("trust proxy", 1);
 
   app.use(requestId);
+  app.use((req, res, next) => {
+    if (env.NODE_ENV !== "production") return next();
+    const forwardedProto = req.header("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+    const isHttps = req.secure || forwardedProto === "https";
+    if (isHttps) return next();
+
+    if (req.method === "GET" || req.method === "HEAD") {
+      const host = req.header("host");
+      if (host) return res.redirect(308, `https://${host}${req.originalUrl}`);
+    }
+    return res.status(426).json({ error: { message: "HTTPS is required" } });
+  });
   app.use(
     pinoHttp({
       logger,
@@ -32,7 +44,26 @@ export function createApp() {
       }),
     }),
   );
-  app.use(helmet());
+  app.use(
+    helmet({
+      frameguard: { action: "deny" },
+      hsts: {
+        maxAge: 31_536_000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          "frame-ancestors": ["'none'"],
+          "object-src": ["'none'"],
+          "script-src": ["'self'"],
+          "style-src": ["'self'", "'unsafe-inline'"],
+          "img-src": ["'self'", "data:", "blob:"],
+        },
+      },
+    }),
+  );
   const allowedOrigins = env.CORS_ORIGIN.split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -82,11 +113,6 @@ export function createApp() {
     }),
   );
 
-  // Serve uploads directory statically
-  const uploadDirAbs = path.isAbsolute(env.UPLOAD_DIR) 
-    ? env.UPLOAD_DIR 
-    : path.resolve(process.cwd(), env.UPLOAD_DIR);
-  app.use("/uploads", express.static(uploadDirAbs));
   app.use("/api/v1", apiV1Router);
 
   const frontendDistDir = env.FRONTEND_DIST_DIR

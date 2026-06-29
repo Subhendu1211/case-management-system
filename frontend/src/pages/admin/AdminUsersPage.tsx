@@ -6,6 +6,7 @@ import { Modal } from '../../components/Modal';
 import { Table, type Column } from '../../components/Table';
 import type { Role, UserAdmin } from '../../lib/types';
 import { useCreateUser, useUsers } from '../../lib/queries/users.queries';
+import { validatePasswordPolicy } from '../../lib/passwordPolicy';
 
 const roles: Role[] = [
 	'PRIVATE_SECRETARY',
@@ -31,6 +32,7 @@ export function AdminUsersPage() {
 	const [open, setOpen] = useState(false);
 	const create = useCreateUser();
 	const [form, setForm] = useState({ name: '', email: '', mobile: '', password: '', role: 'ADMIN' as Role });
+	const [passwordError, setPasswordError] = useState<string | null>(null);
 
 	const columns = useMemo<Column<UserAdmin>[]>(
 		() => [
@@ -112,8 +114,14 @@ export function AdminUsersPage() {
 					className="grid grid-cols-1 gap-3"
 					onSubmit={async (e) => {
 						e.preventDefault();
+						const nextPasswordError = validatePasswordPolicy(form.password);
+						if (nextPasswordError) {
+							setPasswordError(nextPasswordError);
+							return;
+						}
 						await create.mutateAsync(form);
 						setOpen(false);
+						setPasswordError(null);
 						setForm({ name: '', email: '', mobile: '', password: '', role: 'ADMIN' });
 					}}
 				>
@@ -136,9 +144,13 @@ export function AdminUsersPage() {
 						label="Password"
 						type="password"
 						value={form.password}
-						onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+						onChange={(e) => {
+							setPasswordError(null);
+							setForm((f) => ({ ...f, password: e.target.value }));
+						}}
 						required
-						minLength={8}
+						minLength={12}
+						error={passwordError ?? undefined}
 					/>
 					<label className="block">
 						<div className="mb-1 text-xs font-medium text-neutral-700">Role</div>

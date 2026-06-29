@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isStrongPassword, passwordPolicyMessage } from "../utils/passwordPolicy.js";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^[0-9+\-\s]{6,20}$/;
@@ -7,6 +8,8 @@ const captchaSchema = z.object({
   id: z.string().min(1),
   solution: z.string().min(1),
 });
+
+const strongPasswordSchema = z.string().refine(isStrongPassword, passwordPolicyMessage);
 
 export const loginSchema = z.object({
   identifier: z
@@ -26,8 +29,8 @@ export const registerSchema = z
     name: z.string().min(1),
     email: z.string().email(),
     mobile: z.string().min(10), // Basic validation
-    password: z.string().min(8),
-    confirmPassword: z.string().min(8),
+    password: strongPasswordSchema,
+    confirmPassword: z.string().min(1),
     address: z.string().min(1),
     policeStation: z.string().min(1),
     block: z.string().min(1),
@@ -57,10 +60,8 @@ export const resetPasswordSchema = z
       .string()
       .trim()
       .regex(/^\d{4,8}$/, "OTP must be 4 to 8 digits"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z
-      .string()
-      .min(8, "Confirm password must be at least 8 characters"),
+    password: strongPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm password is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",

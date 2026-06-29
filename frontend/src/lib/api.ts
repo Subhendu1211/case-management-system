@@ -78,6 +78,14 @@ export async function publicApi<T>(method: HttpMethod, path: string, body?: unkn
 	return rawRequest<T>(method, path, body, false);
 }
 
+export async function logout() {
+	try {
+		await rawRequest<{ message: string }>('POST', '/auth/logout', undefined, true);
+	} finally {
+		clearTokens();
+	}
+}
+
 export function resolveFileUrl(url?: string | null): string | null {
 	if (!url) return null;
 	const raw = String(url).trim();

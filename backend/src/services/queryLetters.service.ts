@@ -5,7 +5,7 @@ import { prisma } from '../db/prisma.js';
 import type { AuthUser } from '../middleware/rbac.js';
 import { HttpError } from '../utils/httpError.js';
 import { getCase, updateCaseStatusWithClient } from './cases.service.js';
-import { env } from '../config/env.js';
+import { resolveUploadDirAbs, storageKeyFor } from '../utils/uploadSecurity.js';
 
 export async function listQueryLetters(caseYear: number, caseId: string, user: AuthUser) {
 	await getCase(caseYear, caseId, user);
@@ -44,13 +44,13 @@ export async function createQueryLetter(
 		});
 
 		const fileName = `query-letter-${created.id}.txt`;
-		const baseDir = path.resolve(env.UPLOAD_DIR, 'cases', String(caseYear), caseId);
+		const baseDir = path.resolve(resolveUploadDirAbs(), 'cases', String(caseYear), caseId);
 		fs.mkdirSync(baseDir, { recursive: true });
 		const filePath = path.join(baseDir, fileName);
 		const bodyText = input.body ?? '';
 		const content = `Subject: ${input.subject}\nRecipient: ${input.recipientType}\nChannel: ${String(input.channel)}\n\n${bodyText}`.trim() + '\n';
 		fs.writeFileSync(filePath, content, 'utf8');
-		const storageKey = path.relative(env.UPLOAD_DIR, filePath);
+		const storageKey = storageKeyFor(filePath);
 
 		await tx.document.create({
 			data: {

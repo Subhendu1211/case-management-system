@@ -3,7 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from '../Sidebar';
-import { clearTokens } from '../../lib/auth';
+import { logout } from '../../lib/api';
 import { useMe } from '../../lib/queries/auth.queries';
 import { setLang, t, useLang } from '../../i18n';
 
@@ -25,8 +25,8 @@ export function AppShell(props: { title: string; nav: { to: string; label: strin
 		});
 	}, []);
 
-	const handleLogout = useCallback(() => {
-		clearTokens();
+	const handleLogout = useCallback(async () => {
+		await logout().catch(() => undefined);
 		qc.clear();
 		navigate('/login', { replace: true });
 	}, [navigate, qc]);

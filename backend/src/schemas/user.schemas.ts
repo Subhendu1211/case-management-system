@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { isStrongPassword, passwordPolicyMessage } from '../utils/passwordPolicy.js';
 
 export const createUserSchema = z.object({
 	name: z.string().trim().min(2),
 	email: z.string().trim().email(),
 	mobile: z.string().trim().regex(/^[0-9]{10,15}$/, 'Mobile number must contain 10 to 15 digits'),
-	password: z.string().min(8),
+	password: z.string().refine(isStrongPassword, passwordPolicyMessage),
 	role: z.enum([
 		'PRIVATE_SECRETARY',
 		'PRIVATE_ASSISTANT',

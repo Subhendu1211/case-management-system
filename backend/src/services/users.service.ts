@@ -4,8 +4,12 @@ import { prisma } from '../db/prisma.js';
 import type { Role } from '../middleware/rbac.js';
 import type { CreateUserInput } from '../schemas/user.schemas.js';
 import { HttpError } from '../utils/httpError.js';
+import { validatePasswordPolicy } from '../utils/passwordPolicy.js';
 
 export async function createUser(input: CreateUserInput) {
+	const passwordPolicyError = validatePasswordPolicy(input.password);
+	if (passwordPolicyError) throw new HttpError(400, passwordPolicyError);
+
 	const [existingEmail, existingMobile] = await Promise.all([
 		prisma.user.findUnique({ where: { email: input.email }, select: { id: true } }),
 		prisma.user.findUnique({ where: { mobile: input.mobile }, select: { id: true } })

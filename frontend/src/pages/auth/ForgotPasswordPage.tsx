@@ -7,6 +7,7 @@ import {
 } from "../../lib/queries/auth.queries";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { t, useLang } from "../../i18n";
+import { validatePasswordPolicy } from "../../lib/passwordPolicy";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^[0-9+\-\s]{6,20}$/;
@@ -56,8 +57,8 @@ export function ForgotPasswordPage() {
   const canResetSubmit =
     !!resetRequestId &&
     !!otp.trim() &&
-    password.length >= 8 &&
-    confirmPassword.length >= 8 &&
+    validatePasswordPolicy(password) === null &&
+    confirmPassword.length > 0 &&
     !resetDisabled;
   const selectedIdentifier = hasEmail ? emailValue : phoneValue;
 
@@ -94,7 +95,7 @@ export function ForgotPasswordPage() {
       setFormError(t("auth.forgotPassword.passwordMismatch"));
       return;
     }
-    if (password.length < 8) {
+    if (validatePasswordPolicy(password)) {
       setFormError(t("auth.forgotPassword.passwordMin"));
       return;
     }
@@ -378,7 +379,7 @@ export function ForgotPasswordPage() {
                     setPassword(e.target.value);
                     setFormError(null);
                   }}
-                  minLength={8}
+                  minLength={12}
                   autoComplete="new-password"
                   placeholder={t("auth.forgotPassword.passwordPlaceholder")}
                   className="w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 transition-all hover:border-neutral-400 focus:border-gov-blue focus:ring-2 focus:ring-gov-blue/20"
@@ -397,7 +398,7 @@ export function ForgotPasswordPage() {
                     setConfirmPassword(e.target.value);
                     setFormError(null);
                   }}
-                  minLength={8}
+                  minLength={12}
                   autoComplete="new-password"
                   placeholder={t("auth.forgotPassword.confirmPasswordPlaceholder")}
                   className="w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 transition-all hover:border-neutral-400 focus:border-gov-blue focus:ring-2 focus:ring-gov-blue/20"

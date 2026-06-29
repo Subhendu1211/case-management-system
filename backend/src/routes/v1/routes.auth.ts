@@ -14,6 +14,7 @@ import {
   login,
   loginVerifyOtp,
   loginWithGoogle,
+  logoutCurrentSession,
   register,
   resetPassword,
   refresh,
@@ -102,6 +103,15 @@ authRouter.post(
 );
 
 authRouter.post(
+  "/logout",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const user = (req as any).user;
+    res.json(await logoutCurrentSession(user));
+  }),
+);
+
+authRouter.post(
   "/google",
   asyncHandler(async (req, res) => {
     const input = googleLoginSchema.parse(req.body);
@@ -115,6 +125,13 @@ authRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     const user = (req as any).user;
-    res.json({ user });
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
   }),
 );

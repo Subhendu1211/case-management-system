@@ -10,6 +10,8 @@ import {
 } from "./tokens.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
+import type { AuthUser } from "../../middleware/rbac.js";
+import { validatePasswordPolicy } from "../../utils/passwordPolicy.js";
 import {
   inferNotificationChannel,
   maskRecipient,
@@ -22,6 +24,10 @@ function addSeconds(date: Date, seconds: number) {
   return new Date(date.getTime() + seconds * 1000);
 }
 
+function subtractSeconds(date: Date, seconds: number) {
+  return new Date(date.getTime() - seconds * 1000);
+}
+
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID || undefined);
 
 async function issueSession(user: {
@@ -30,23 +36,32 @@ async function issueSession(user: {
   name: string;
   role: any;
 }) {
+  const now = new Date();
+  const sessionId = randomUUID();
+  const refresh = issueRefreshToken({ userId: user.id });
+
+  await prisma.$transaction([
+    prisma.authSession.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    prisma.authSession.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenJti: refresh.payload.jti,
+        refreshHash: await bcrypt.hash(refresh.token, 10),
+        expiresAt: addSeconds(now, env.JWT_REFRESH_TTL_SECONDS),
+      },
+    }),
+  ]);
+
   const access = issueAccessToken({
     userId: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
-  });
-  const refresh = issueRefreshToken({ userId: user.id });
-
-  const now = new Date();
-  await prisma.authSession.create({
-    data: {
-      id: randomUUID(),
-      userId: user.id,
-      refreshTokenJti: refresh.payload.jti,
-      refreshHash: await bcrypt.hash(refresh.token, 10),
-      expiresAt: addSeconds(now, env.JWT_REFRESH_TTL_SECONDS),
-    },
+    sessionId,
   });
 
   return {
@@ -125,6 +140,46 @@ async function attemptLoginOtpDelivery(
   }
 }
 
+async function enforceLoginOtpRateLimit(userId: string) {
+  const now = new Date();
+  const cooldownStart = subtractSeconds(now, env.LOGIN_OTP_RESEND_COOLDOWN_SECONDS);
+  const recentChallenge = await prisma.loginOtpChallenge.findFirst({
+    where: { userId, createdAt: { gt: cooldownStart } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (recentChallenge) {
+    throw new HttpError(429, "Please wait before requesting another login OTP.");
+  }
+
+  const windowStart = subtractSeconds(now, env.LOGIN_OTP_RATE_WINDOW_SECONDS);
+  const recentCount = await prisma.loginOtpChallenge.count({
+    where: { userId, createdAt: { gte: windowStart } },
+  });
+  if (recentCount >= env.LOGIN_OTP_MAX_PER_WINDOW) {
+    throw new HttpError(429, "Too many login OTP requests. Please try again later.");
+  }
+}
+
+async function enforcePasswordResetOtpRateLimit(userId: string) {
+  const now = new Date();
+  const cooldownStart = subtractSeconds(now, env.PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS);
+  const recentChallenge = await prisma.passwordResetChallenge.findFirst({
+    where: { userId, createdAt: { gt: cooldownStart } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (recentChallenge) {
+    throw new HttpError(429, "Please wait before requesting another password reset OTP.");
+  }
+
+  const windowStart = subtractSeconds(now, env.PASSWORD_RESET_OTP_RATE_WINDOW_SECONDS);
+  const recentCount = await prisma.passwordResetChallenge.count({
+    where: { userId, createdAt: { gte: windowStart } },
+  });
+  if (recentCount >= env.PASSWORD_RESET_OTP_MAX_PER_WINDOW) {
+    throw new HttpError(429, "Too many password reset OTP requests. Please try again later.");
+  }
+}
+
 export async function login(
   identifier: string,
   password: string,
@@ -152,6 +207,7 @@ export async function login(
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new HttpError(401, "Invalid credentials");
+  await enforceLoginOtpRateLimit(user.id);
 
   const emailTarget = user.email.trim();
   const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
@@ -356,6 +412,9 @@ export async function loginVerifyOtp(
 }
 
 export async function register(data: RegisterInput) {
+  const passwordPolicyError = validatePasswordPolicy(data.password);
+  if (passwordPolicyError) throw new HttpError(400, passwordPolicyError);
+
   const normalizedEmail = data.email.trim().toLowerCase();
   const normalizedMobile = data.mobile.trim();
   const existingUser = await prisma.user.findFirst({
@@ -421,6 +480,7 @@ export async function forgotPassword(identifier: string) {
   if (!user.isActive) {
     throw new HttpError(401, "Account is inactive.");
   }
+  await enforcePasswordResetOtpRateLimit(user.id);
 
   const emailTarget = user.email.trim();
   const smsTarget = user.mobile?.trim() ? user.mobile.trim() : null;
@@ -518,6 +578,9 @@ export async function forgotPassword(identifier: string) {
 }
 
 export async function resetPassword(input: ResetPasswordInput) {
+  const passwordPolicyError = validatePasswordPolicy(input.password);
+  if (passwordPolicyError) throw new HttpError(400, passwordPolicyError);
+
   const challenge = await prisma.passwordResetChallenge.findUnique({
     where: { id: input.resetRequestId },
     include: { user: true },
@@ -618,6 +681,7 @@ export async function refresh(refreshToken: string) {
       userId: payload.sub,
       refreshTokenJti: payload.jti,
       revokedAt: null,
+      expiresAt: { gt: new Date() },
     },
   });
   if (!session) throw new HttpError(401, "Refresh session not found");
@@ -625,32 +689,48 @@ export async function refresh(refreshToken: string) {
   const ok = await bcrypt.compare(refreshToken, session.refreshHash);
   if (!ok) throw new HttpError(401, "Refresh session invalid");
 
-  // rotate
-  await prisma.authSession.update({
-    where: { id: session.id },
-    data: { revokedAt: new Date() },
-  });
-
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user || !user.isActive) throw new HttpError(401, "User inactive");
 
-  const access = issueAccessToken({
+  const now = new Date();
+  const refresh2 = issueRefreshToken({ userId: user.id });
+  const sessionId = randomUUID();
+  const access2 = issueAccessToken({
     userId: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
+    sessionId,
   });
-  const refresh2 = issueRefreshToken({ userId: user.id });
+  const refreshHash = await bcrypt.hash(refresh2.token, 10);
 
-  await prisma.authSession.create({
-    data: {
-      id: randomUUID(),
+  await prisma.$transaction([
+    prisma.authSession.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    prisma.authSession.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenJti: refresh2.payload.jti,
+        refreshHash,
+        expiresAt: addSeconds(now, env.JWT_REFRESH_TTL_SECONDS),
+      },
+    }),
+  ]);
+
+  return { accessToken: access2.token, refreshToken: refresh2.token };
+}
+
+export async function logoutCurrentSession(user: AuthUser) {
+  await prisma.authSession.updateMany({
+    where: {
+      id: user.sessionId,
       userId: user.id,
-      refreshTokenJti: refresh2.payload.jti,
-      refreshHash: await bcrypt.hash(refresh2.token, 10),
-      expiresAt: addSeconds(new Date(), env.JWT_REFRESH_TTL_SECONDS),
+      revokedAt: null,
     },
+    data: { revokedAt: new Date() },
   });
-
-  return { accessToken: access.token, refreshToken: refresh2.token };
+  return { message: "Signed out successfully." };
 }

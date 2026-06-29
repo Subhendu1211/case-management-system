@@ -9,15 +9,18 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { audit } from '../../middleware/audit.js';
 import { createComplaintSchema, diaryEntrySchema, listComplaintsSchema, updateComplaintSchema } from '../../schemas/complaint.schemas.js';
 import { createComplaint, diaryEntryFromComplaint, getComplaint, listComplaints, updateComplaint } from '../../services/complaints.service.js';
-import { env } from '../../config/env.js';
 import { prisma } from '../../db/prisma.js';
 import { HttpError } from '../../utils/httpError.js';
+import {
+	cleanupUploadedFiles,
+	resolveStoredFilePath,
+	resolveUploadDirAbs,
+	sendSafeDownload,
+	uploadFileFilter,
+	validateUploadedFiles
+} from '../../utils/uploadSecurity.js';
 
 export const complaintsRouter = Router();
-
-function resolveUploadDirAbs() {
-	return path.isAbsolute(env.UPLOAD_DIR) ? env.UPLOAD_DIR : path.resolve(process.cwd(), env.UPLOAD_DIR);
-}
 
 const upload = multer({
 	storage: multer.diskStorage({
@@ -32,7 +35,8 @@ const upload = multer({
 			cb(null, `${randomUUID()}${ext}`);
 		}
 	}),
-	limits: { fileSize: 10 * 1024 * 1024 }
+	fileFilter: uploadFileFilter,
+	limits: { fileSize: 10 * 1024 * 1024, files: 10 }
 });
 
 complaintsRouter.use(authenticate);
@@ -124,21 +128,28 @@ complaintsRouter.post(
 			return res.status(400).json({ error: { message: 'No files uploaded' } });
 		}
 
-		const records = await prisma.$transaction(
-			files.map((file) =>
-				prisma.complaintDocument.create({
-					data: {
-						id: randomUUID(),
-						complaintId,
-						fileName: file.originalname,
-						mimeType: file.mimetype,
-						storageKey: path.relative(resolveUploadDirAbs(), file.path).replace(/\\/g, '/'),
-						sizeBytes: file.size,
-						uploadedById: userId
-					}
-				})
-			)
-		);
+		const validatedFiles = await validateUploadedFiles(files);
+		let records;
+		try {
+			records = await prisma.$transaction(
+				validatedFiles.map((uploadItem) =>
+					prisma.complaintDocument.create({
+						data: {
+							id: randomUUID(),
+							complaintId,
+							fileName: uploadItem.fileName,
+							mimeType: uploadItem.mimeType,
+							storageKey: uploadItem.storageKey,
+							sizeBytes: uploadItem.file.size,
+							uploadedById: userId
+						}
+					})
+				)
+			);
+		} catch (error) {
+			await cleanupUploadedFiles(files);
+			throw error;
+		}
 
 		res.status(201).json(
 			records.map((doc) => ({
@@ -162,11 +173,11 @@ complaintsRouter.get(
 		});
 		if (!doc) throw new HttpError(404, 'Complaint document not found');
 
-		const filePath = path.resolve(resolveUploadDirAbs(), doc.storageKey);
+		const filePath = resolveStoredFilePath(doc.storageKey);
 		if (!fs.existsSync(filePath)) {
 			throw new HttpError(404, 'File missing on server');
 		}
 
-		res.download(filePath, doc.fileName);
+		sendSafeDownload(res, filePath, doc.fileName);
 	})
 );

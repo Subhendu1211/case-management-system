@@ -8,6 +8,7 @@ export type AccessTokenPayload = {
 	email: string;
 	name: string;
 	role: Role;
+	sid: string;
 	jti: string;
 };
 
@@ -17,12 +18,13 @@ export type RefreshTokenPayload = {
 	type: 'refresh';
 };
 
-export function issueAccessToken(input: { userId: string; email: string; name: string; role: Role }) {
+export function issueAccessToken(input: { userId: string; email: string; name: string; role: Role; sessionId: string }) {
 	const payload: AccessTokenPayload = {
 		sub: input.userId,
 		email: input.email,
 		name: input.name,
 		role: input.role,
+		sid: input.sessionId,
 		jti: randomUUID()
 	};
 

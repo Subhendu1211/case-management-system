@@ -24,6 +24,7 @@ import { IssueRegisterPage } from "./pages/issueRegister/IssueRegisterPage";
 import { RegistrationPage } from "./pages/public/RegistrationPage";
 import { ProfilePage } from "./pages/public/ProfilePage";
 import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
+import { RequireRole } from "./components/RequireRole";
 
 export const router = createBrowserRouter([
   { path: "/", element: <DashboardRedirect /> },
@@ -33,15 +34,54 @@ export const router = createBrowserRouter([
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/profile", element: <ProfilePage /> },
   { path: "/dashboard", element: <DashboardRedirect /> },
-  { path: "/dashboard/commissioner", element: <CommissionerDashboard /> },
+  {
+    path: "/dashboard/commissioner",
+    element: (
+      <RequireRole allowed={["COMMISSIONER"]}>
+        <CommissionerDashboard />
+      </RequireRole>
+    ),
+  },
   {
     path: "/dashboard/private-secretary",
-    element: <PrivateSecretaryDashboard />,
+    element: (
+      <RequireRole allowed={["PRIVATE_SECRETARY"]}>
+        <PrivateSecretaryDashboard />
+      </RequireRole>
+    ),
   },
-  { path: "/dashboard/legal", element: <LegalDashboard /> },
-  { path: "/dashboard/registrar", element: <RegistrarDashboard /> },
-  { path: "/dashboard/stationery", element: <StationeryDashboard /> },
-  { path: "/dashboard/admin", element: <AdminDashboard /> },
+  {
+    path: "/dashboard/legal",
+    element: (
+      <RequireRole allowed={["LEGAL_ASSISTANT"]}>
+        <LegalDashboard />
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/dashboard/registrar",
+    element: (
+      <RequireRole allowed={["REGISTRAR"]}>
+        <RegistrarDashboard />
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/dashboard/stationery",
+    element: (
+      <RequireRole allowed={["STATIONERY", "COMPUTER_ASSISTANT"]}>
+        <StationeryDashboard />
+      </RequireRole>
+    ),
+  },
+  {
+    path: "/dashboard/admin",
+    element: (
+      <RequireRole allowed={["ADMIN"]}>
+        <AdminDashboard />
+      </RequireRole>
+    ),
+  },
   { path: "/admin/users", element: <AdminUsersPage /> },
   { path: "/admin/audit-logs", element: <AdminAuditLogsPage /> },
   { path: "/admin/notifications", element: <AdminNotificationsPage /> },

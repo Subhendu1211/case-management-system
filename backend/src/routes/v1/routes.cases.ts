@@ -35,9 +35,16 @@ import { createQueryLetter, dispatchQueryLetter, listIssueRegister, listQueryLet
 import { createDispatchSchema } from '../../schemas/dispatch.schemas.js';
 import { createCaseDispatch, listCaseDispatches } from '../../services/dispatch.service.js';
 import { prisma } from '../../db/prisma.js';
-import { env } from '../../config/env.js';
 import { HttpError } from '../../utils/httpError.js';
 import { listAuditLogs } from '../../services/audit-read.service.js';
+import {
+	cleanupUploadedFiles,
+	resolveStoredFilePath,
+	resolveUploadDirAbs,
+	sendSafeDownload,
+	uploadFileFilter,
+	validateUploadedFiles
+} from '../../utils/uploadSecurity.js';
 
 export const casesRouter = Router();
 
@@ -46,10 +53,7 @@ const upload = multer({
 		destination: (req, _file, cb) => {
 			const caseYear = req.params.caseYear ?? 'unknown';
 			const caseId = req.params.caseId ?? 'unknown';
-			// Resolve UPLOAD_DIR to absolute path to ensure consistent saving
-			const uploadDirAbs = path.isAbsolute(env.UPLOAD_DIR) 
-				? env.UPLOAD_DIR 
-				: path.resolve(process.cwd(), env.UPLOAD_DIR);
+			const uploadDirAbs = resolveUploadDirAbs();
 			const baseDir = path.resolve(uploadDirAbs, 'cases', String(caseYear), caseId);
 			fs.mkdirSync(baseDir, { recursive: true });
 			cb(null, baseDir);
@@ -59,7 +63,8 @@ const upload = multer({
 			cb(null, `${randomUUID()}${ext}`);
 		}
 	}),
-	limits: { fileSize: 10 * 1024 * 1024 }
+	fileFilter: uploadFileFilter,
+	limits: { fileSize: 10 * 1024 * 1024, files: 10 }
 });
 
 casesRouter.use(authenticate);
@@ -194,24 +199,30 @@ casesRouter.post(
 			throw new HttpError(400, 'No files provided');
 		}
 
-		const created = await prisma.$transaction(
-			files.map((file) => {
-				const storageKey = path.relative(env.UPLOAD_DIR, file.path);
-				return prisma.document.create({
-					data: {
-						id: randomUUID(),
-						caseYear,
-						caseId,
-						kind: 'ATTACHMENT',
-						fileName: file.originalname,
-						mimeType: file.mimetype,
-						storageKey,
-						sizeBytes: file.size,
-						uploadedById: (req as any).user?.id ?? null
-					}
-				});
-			})
-		);
+		const validatedFiles = await validateUploadedFiles(files);
+		let created;
+		try {
+			created = await prisma.$transaction(
+				validatedFiles.map((uploadItem) =>
+					prisma.document.create({
+						data: {
+							id: randomUUID(),
+							caseYear,
+							caseId,
+							kind: 'ATTACHMENT',
+							fileName: uploadItem.fileName,
+							mimeType: uploadItem.mimeType,
+							storageKey: uploadItem.storageKey,
+							sizeBytes: uploadItem.file.size,
+							uploadedById: (req as any).user?.id ?? null
+						}
+					})
+				)
+			);
+		} catch (error) {
+			await cleanupUploadedFiles(files);
+			throw error;
+		}
 
 		// If this case was closed and a Private Assistant uploaded new communication,
 		// reopen the case to REGISTERED so Legal Assistant can pick it up for order sheet preparation.
@@ -248,12 +259,12 @@ casesRouter.get(
 			throw new HttpError(404, 'Document not found');
 		}
 
-		const filePath = path.resolve(env.UPLOAD_DIR, doc.storageKey);
+		const filePath = resolveStoredFilePath(doc.storageKey);
 		if (!fs.existsSync(filePath)) {
 			throw new HttpError(404, 'File missing on server');
 		}
 
-		res.download(filePath, doc.fileName);
+		sendSafeDownload(res, filePath, doc.fileName);
 	})
 );
 
@@ -270,12 +281,12 @@ casesRouter.get(
 			throw new HttpError(404, 'Complaint document not found for this case');
 		}
 
-		const filePath = path.resolve(env.UPLOAD_DIR, doc.storageKey);
+		const filePath = resolveStoredFilePath(doc.storageKey);
 		if (!fs.existsSync(filePath)) {
 			throw new HttpError(404, 'File missing on server');
 		}
 
-		res.download(filePath, doc.fileName);
+		sendSafeDownload(res, filePath, doc.fileName);
 	})
 );
 
@@ -377,6 +388,7 @@ casesRouter.patch(
 // Order sheets
 casesRouter.get(
 	'/:caseYear/:caseId/order-sheets',
+	requireRole(['LEGAL_ASSISTANT', 'REGISTRAR', 'COMMISSIONER', 'PRIVATE_SECRETARY', 'PRIVATE_ASSISTANT', 'ADMIN']),
 	asyncHandler(async (req, res) => {
 		const caseYear = Number(req.params.caseYear);
 		const caseId = req.params.caseId;

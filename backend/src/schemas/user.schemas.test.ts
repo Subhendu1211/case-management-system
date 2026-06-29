@@ -5,7 +5,7 @@ const validUser = {
 	name: 'Legal Officer',
 	email: 'legal@example.com',
 	mobile: '9876543210',
-	password: 'password123',
+	password: 'Legal@123456',
 	role: 'LEGAL_ASSISTANT'
 } as const;
 

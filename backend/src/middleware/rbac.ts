@@ -18,6 +18,7 @@ export type AuthUser = {
 	email: string;
 	role: Role;
 	name: string;
+	sessionId: string;
 };
 
 export function requireRole(allowed: Role[]) {
